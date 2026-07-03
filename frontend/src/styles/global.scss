@@ -1,0 +1,33 @@
+@use '@styles/variables.module.scss' as *;
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 62.5%; // 10px / 16px = 0.625 = 62.5% (Percentage of user's font-size setting), 1 rem = font-size px
+
+  @media only screen and (max-width: $bp-large) {
+    font-size: 50%;
+  }
+
+  @media only screen and (max-width: $bp-smallest) {
+    font-size: 62.5%;
+  }
+
+  // @media only screen and (max-width: $bp-small) {
+  //   font-size: 40%;
+  // }
+}
+
+body {
+  font-family: 'Share Tech', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+
+  // Only works if there is nothing absolutely positioned in relation to body
+  overflow-x: hidden;
+}

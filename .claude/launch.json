@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend-local-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3010"],
+      "port": 3010,
+      "env": {
+        "VITE_PROXY_TARGET": "http://localhost:8000"
+      },
+      "cwd": "frontend"
+    }
+  ]
+}

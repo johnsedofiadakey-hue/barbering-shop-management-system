@@ -1,0 +1,130 @@
+@use '@styles/variables.module.scss' as *;
+
+.registered {
+  position: absolute;
+  z-index: 1000;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+
+  min-width: 30rem;
+
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  gap: 1rem;
+
+  strong {
+    font-size: 1.2em;
+    color: inherit;
+  }
+}
+
+// Left Side
+.description {
+  display: flex;
+  flex-direction: column;
+
+  h2 {
+    color: $color-secondary;
+    font-size: 2rem;
+  }
+
+  .features {
+    list-style: none;
+    height: 100%;
+
+    font-size: 1.5rem;
+    color: $color-muted;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+  }
+}
+
+.note {
+  color: $color-secondary;
+  font-size: 1.5rem;
+}
+
+// Right Side
+.right-panel {
+  background: radial-gradient(ellipse at 50% 30%, rgba(201, 149, 47, 0.16), transparent 65%), $color-main !important;
+}
+
+.login {
+  width: 35rem;
+  border-top: 3px solid $color-gold;
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .label {
+      margin-bottom: 1rem;
+
+      font-size: 2rem;
+      text-align: center;
+      color: $color-primary;
+    }
+
+    .login-btn {
+      margin-top: 2rem;
+    }
+
+    .forgot-btn {
+      padding: 0;
+      align-self: center;
+    }
+
+    .line {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .otp-hint {
+      font-size: 1.3rem;
+      color: $color-accent;
+      text-align: center;
+      margin-bottom: 1rem;
+
+      strong {
+        color: $color-primary;
+      }
+    }
+  }
+
+  .staff-toggle {
+    padding: 0;
+    margin-top: 1.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .login {
+    width: fit-content;
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+}
+
+@media (max-width: $bp-small) {
+  .login {
+    margin: 3rem;
+  }
+}

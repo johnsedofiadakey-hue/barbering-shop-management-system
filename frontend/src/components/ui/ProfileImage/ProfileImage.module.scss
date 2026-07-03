@@ -1,0 +1,14 @@
+@use '@styles/variables.module.scss' as *;
+
+.profile-image {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+
+  .image {
+    border-radius: 50%;
+    object-fit: cover;
+
+    border: 2px solid $color-accent;
+  }
+}

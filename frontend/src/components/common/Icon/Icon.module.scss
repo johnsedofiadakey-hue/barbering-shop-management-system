@@ -1,0 +1,39 @@
+.wrapper {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &.ty {
+    width: 14px;
+    height: 14px;
+  }
+
+  &.sm {
+    width: 18px;
+    height: 18px;
+  }
+
+  &.md {
+    width: 21px;
+    height: 21px;
+  }
+
+  &.lg {
+    width: 30px;
+    height: 30px;
+  }
+
+  &.hg {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  color: inherit;
+  width: 100%;
+  height: 100%;
+}

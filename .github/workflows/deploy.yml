@@ -1,0 +1,26 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'docs/**'
+      - 'todo.txt'
+      - 'README.md'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.PRODUCTION_PATH }}
+            echo "${{ secrets.ENV_PROD_CONTENT }}" > .env.prod
+            ./deploy.sh

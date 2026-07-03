@@ -1,0 +1,37 @@
+@use '@styles/variables.module.scss' as *;
+
+.footer-area {
+  flex-shrink: 0; // Prevent sidebar from changing height
+
+  height: 6rem;
+  border-top: 1px solid $border;
+  background: $color-primary;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  .footer {
+    width: 100%;
+    padding-inline: 2.5rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .links {
+      list-style-type: none;
+      display: flex;
+      gap: 1.5rem;
+
+      .button {
+        padding: 1rem;
+      }
+    }
+
+    .copyright {
+      font-size: 1.3rem;
+      color: $color-muted;
+    }
+  }
+}

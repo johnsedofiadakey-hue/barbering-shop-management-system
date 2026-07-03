@@ -1,0 +1,322 @@
+@use '@styles/variables.module.scss' as *;
+
+.home {
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  background: radial-gradient(ellipse at 50% -10%, rgba(201, 149, 47, 0.12), transparent 60%), $color-main;
+  color: $color-on-dark;
+}
+
+.gold {
+  background: linear-gradient(90deg, $color-gold-strong, $color-gold);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+// --------------- Hero ---------------
+.hero {
+  width: 100%;
+  max-width: 90rem;
+  padding: 7rem 2rem 5rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2rem;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  padding: 0.6rem 1.4rem;
+  border: 1px solid $border-hover;
+  border-radius: 100px;
+
+  color: $color-gold-strong;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.headline {
+  max-width: 55rem;
+  font-size: 4.2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: $color-on-dark;
+}
+
+.subheadline {
+  max-width: 50rem;
+  font-size: 1.6rem;
+  color: $color-tertiary;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-top: 2rem;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: $color-muted;
+  font-size: 1.3rem;
+}
+
+// --------------- Shared section styles ---------------
+.section-title {
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: $color-on-dark;
+  text-align: center;
+}
+
+.section-subtitle {
+  margin-top: 0.8rem;
+  font-size: 1.4rem;
+  color: $color-tertiary;
+  text-align: center;
+}
+
+// --------------- Cuts of the week ---------------
+.cuts {
+  width: 100%;
+  max-width: 90rem;
+  padding: 4rem 2rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cuts-grid {
+  width: 100%;
+  margin-top: 3rem;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.5rem;
+}
+
+.cut-tile {
+  padding: 2.5rem 1.5rem;
+  border: 1px solid $border-dark;
+  border-radius: 12px;
+  background: $color-surface-dark;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+
+  &:hover {
+    border-color: $border-hover;
+    transform: translateY(-4px);
+  }
+}
+
+.cut-icon {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 50%;
+  background: rgba(201, 149, 47, 0.15);
+  color: $color-gold-strong;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cut-name {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: $color-on-dark;
+}
+
+.cut-meta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.2rem;
+  color: $color-muted;
+}
+
+.cut-price {
+  color: $color-gold-strong;
+  font-weight: 700;
+}
+
+// --------------- How it works ---------------
+.how-it-works {
+  width: 100%;
+  max-width: 90rem;
+  padding: 4rem 2rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.steps-row {
+  width: 100%;
+  margin-top: 3rem;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 2rem;
+}
+
+.step {
+  position: relative;
+  padding: 2rem 1.5rem;
+  border: 1px solid $border-dark;
+  border-radius: 12px;
+  background: $color-surface-dark-alt;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.8rem;
+}
+
+.step-number {
+  position: absolute;
+  top: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: $color-gold;
+  color: $color-primary;
+  font-size: 1.1rem;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-icon {
+  margin-top: 0.5rem;
+  color: $color-gold-strong;
+}
+
+.step-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: $color-on-dark;
+}
+
+.step-text {
+  font-size: 1.2rem;
+  color: $color-tertiary;
+}
+
+// --------------- Meet the team ---------------
+.team {
+  width: 100%;
+  max-width: 90rem;
+  padding: 4rem 2rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.team-row {
+  width: 100%;
+  margin-top: 3rem;
+
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.team-card {
+  padding: 2rem;
+  border: 1px solid $border-dark;
+  border-radius: 12px;
+  background: $color-surface-dark;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 14rem;
+}
+
+.team-name {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: $color-on-dark;
+}
+
+.team-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: $color-rating;
+  font-size: 1.2rem;
+}
+
+// --------------- Final CTA ---------------
+.final-cta {
+  width: 100%;
+  padding: 6rem 2rem 8rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.final-cta-title {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: $color-on-dark;
+  text-align: center;
+}
+
+@media (max-width: $bp-medium-small) {
+  .headline {
+    font-size: 3rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+
+    > * {
+      width: 100%;
+    }
+  }
+}

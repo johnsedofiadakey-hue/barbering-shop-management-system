@@ -1,0 +1,20 @@
+@use '@styles/variables.module.scss' as *;
+
+// --------------- Size modifiers ---------------
+.sm {
+  height: 2.9rem;
+  padding-inline: 1rem;
+  font-size: 1.18rem;
+}
+
+.md {
+  height: 3.7rem;
+  padding-inline: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.lg {
+  height: 5.4rem;
+  padding-inline: 2rem;
+  font-size: 2rem;
+}

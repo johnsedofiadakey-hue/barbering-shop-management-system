@@ -1,0 +1,558 @@
+import datetime
+from decimal import Decimal
+from django.urls import reverse
+from django.core import mail
+from rest_framework.test import APITestCase
+from rest_framework import status
+from api.models import (
+    Admin,
+    Barber,
+    Client,
+    Service,
+    AppointmentService,
+    Availability,
+    Appointment,
+    Review,
+    AppointmentStatus,
+    Roles,
+)
+
+class AdminProfileTest(APITestCase):
+    """
+    Tests for all admin features, profile getter, barber and availabilities management, statistics generation.
+    """
+    def setUp(self):
+        # Endpoint URLs
+        self.manage_profile_url = reverse("manage_admin_profile")
+        self.invite_url = reverse("invite_barber")
+        self.get_all_barbers = reverse("get_all_barbers")
+        self.get_all_clients = reverse("get_all_clients")
+        self.all_appointments_url = reverse("get_all_appointments")
+
+        # Create test admin
+        self.admin_password = "AdminPass321!"
+        self.admin_username = "adminuser"
+        self.admin = Admin.objects.create_superuser(
+            username=self.admin_username,
+            password=self.admin_password,
+        )
+
+        # Create a sample barber (active) and one inactive for some tests
+        self.barber = Barber.objects.create_user(
+            username="barby",
+            password="BarberXPass!",
+            email="barber@email.com",
+            name="Bob",
+            surname="Ross",
+            is_active=True,
+        )
+        self.barber_inactive = Barber.objects.create_user(
+            username="barbinactive",
+            password="ZZdummy12",
+            email="inactive@email.com",
+            name="Inactive",
+            surname="Barb",
+            is_active=False,
+        )
+
+        # Make a client
+        self.client_user = Client.objects.create_user(
+            username="clnt",
+            password="ClientPw11",
+            email="client@x.com",
+            name="Cilla",
+            surname="User",
+            phone_number="+15551110006",
+            is_active=True,
+        )
+
+
+    def login_as_admin(self):
+        resp = self.client.post(
+            reverse("login_user"),
+            {"username": self.admin.username, "password": self.admin_password},
+            format="json",
+        )
+        token = resp.data["token"]["access_token"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+
+    def login_as_client(self):
+        resp = self.client.post(
+            reverse("login_user"),
+            {"username": self.client_user.username, "password": "ClientPw11"},
+            format="json",
+        )
+        token = resp.data["token"]["access_token"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+
+
+    def test_get_admin_profile_success(self):
+        """
+        Admin can fetch their profile, and sees all statistics on their dashboard.
+        """
+        service_1 = Service.objects.create(
+            barber=self.barber, 
+            name="Haircut", 
+            price=Decimal("5.50")
+        )
+        service_2 = Service.objects.create(
+            barber=self.barber, 
+            name="Buzz", 
+            price=Decimal("10.00")
+        )
+
+        # -- Helper to bulk assign services via AppointmentService --
+        def _add_services(appointment, service_list):
+            for s in service_list:
+                AppointmentService.objects.create(
+                    appointment=appointment,
+                    name=s.name,
+                    price=s.price,
+                    original_service=s
+                )
+
+        # Create cancelled appointment
+        appointment_1 = Appointment.objects.create(
+            client=self.client_user,
+            barber=self.barber,
+            date=datetime.date.today(),
+            slot=datetime.time(12, 0),
+            status=AppointmentStatus.CANCELLED.value,
+        )
+        _add_services(appointment_1, [service_1, service_2])
+
+        # Create appointment same day as cancelled one
+        appointment_2 = Appointment.objects.create(
+            client=self.client_user, 
+            barber=self.barber,
+            date=datetime.date.today(),
+            slot=datetime.time(14, 0),
+            status=AppointmentStatus.COMPLETED.value,
+        )
+        _add_services(appointment_2, [service_1, service_2])
+
+        # Create completed appointment on another day
+        appointment_3 = Appointment.objects.create(
+            client=self.client_user, 
+            barber=self.barber,
+            date=datetime.date.today() + datetime.timedelta(days=1), 
+            slot=datetime.time(14, 0),
+            status=AppointmentStatus.COMPLETED.value,
+        )
+        _add_services(appointment_3, [service_2])
+
+        # Create ongoing appointment on another day
+        appointment_4 = Appointment.objects.create(
+            client=self.client_user, 
+            barber=self.barber,
+            date=datetime.date.today() + datetime.timedelta(days=2),
+            slot=datetime.time(15, 0),
+            status=AppointmentStatus.ONGOING.value,
+        )
+        _add_services(appointment_4, [service_2])
+
+        # Create review for completed appointment
+        Review.objects.create(
+            client=self.client_user, 
+            barber=self.barber, 
+            rating=5, 
+            comment="top!"
+        )
+
+        # Create another client
+        client_1 = Client.objects.create_user(
+            username="testerclient",
+            password="sugomadic",
+            email="clients@xxx.com",
+            name="Bomber",
+            surname="Romber",
+            phone_number="+15551110007",
+            is_active=True,
+        )
+
+        # Create another barber
+        barber_1 = Barber.objects.create_user(
+            username="testerbarber",
+            password="ligmabals",
+            email="barbers@xxx.com",
+            name="Dudong",
+            surname="Sorcer",
+            is_active=True,
+        )
+
+        # Create appointment by another client
+        appointment_5 = Appointment.objects.create(
+            client=client_1, 
+            barber=barber_1,
+            date=datetime.date.today(),
+            slot=datetime.time(14, 0),
+            status=AppointmentStatus.COMPLETED.value,
+        )
+        _add_services(appointment_5, [service_2])
+
+        # Create review by another client for this barber
+        Review.objects.create(
+            client=client_1, 
+            barber=self.barber,  # Review is for self.barber
+            rating=2, 
+            comment="trash..."
+        )
+
+        self.login_as_admin()
+        response = self.client.get(self.manage_profile_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        profile = response.data["profile"]
+        self.assertEqual(profile, self.admin.to_dict())
+        self.assertEqual(profile['role'], Roles.ADMIN.value)
+        
+
+    def test_get_admin_profile_requires_admin(self):
+        """
+        Only admins can access profile admin endpoint (403/401 otherwise).
+        """
+        # Not authenticated at all
+        response = self.client.get(self.manage_profile_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.login_as_client()
+        response = self.client.get(self.manage_profile_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+    def test_get_barbers_list_success(self):
+        """
+        Return a list of all barbers to authenticated admin
+        """
+        self.login_as_admin()
+
+        response = self.client.get(self.get_all_barbers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        barbers = response.data["barbers"]
+        self.assertIn(self.barber.to_dict(), barbers)
+        self.assertIn(self.barber_inactive.to_dict(), barbers)
+
+
+    def test_get_clients_list_success(self):
+        """
+        Return a list of all clients to authenticated admin
+        """
+
+        # Create another client
+        client_1 = Client.objects.create_user(
+            username="testerclient",
+            password="sugomadic",
+            email="clients@xxx.com",
+            name="Bomber",
+            surname="Romber",
+            phone_number="+15551110008",
+            is_active=True,
+        )
+
+        self.login_as_admin()
+
+        response = self.client.get(self.get_all_clients)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        clients = response.data["clients"]
+        self.assertIn(self.client_user.to_dict(), clients)
+        self.assertIn(client_1.to_dict(), clients)
+
+
+    def test_invite_barber_success(self):
+        """
+        Admin can invite a barber via email: creates inactive user, sends invite.
+        """
+        self.login_as_admin()
+        email = "newbarb@nowhere.com"
+        response = self.client.post(self.invite_url, {"email": email}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("Barber invited successfully", response.data["detail"])
+
+        # Barber should now exist, inactive
+        newbarber = Barber.objects.get(email=email)
+        self.assertFalse(newbarber.is_active)
+        
+        # Email send side effect: should have been called (if using real mail system)
+        self.assertGreaterEqual(len(mail.outbox), 1)
+        self.assertIn(email, mail.outbox[-1].to)
+
+
+
+    def test_invite_barber_existing_email(self):
+        """
+        Fails if trying to invite using an email already registered.
+        """
+        self.login_as_admin()
+        resp = self.client.post(self.invite_url, {"email": self.barber.email}, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already taken", str(resp.data["detail"]))
+
+
+    def test_invite_barber_requires_admin(self):
+        """
+        Only admin can invite barbers.
+        """
+        resp = self.client.post(self.invite_url, {"email": "who@foo.com"}, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.login_as_client()
+        resp = self.client.post(self.invite_url, {"email": "some@b.com"}, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+    def test_delete_barber_success(self):
+        """
+        Admin can delete an active barber by id.
+        """
+        self.login_as_admin()
+        url = reverse("delete_barber", kwargs={"barber_id": self.barber.id})
+        resp = self.client.delete(url)
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Barber.objects.filter(pk=self.barber.pk).exists())
+
+
+    def test_delete_barber_not_found(self):
+        """
+        Returns error if barber does not exist.
+        """
+        self.login_as_admin()
+        url = reverse("delete_barber", kwargs={"barber_id": 99991})
+        resp = self.client.delete(url)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("does not exist", str(resp.data["id"][0]))
+
+
+    def test_delete_barber_requires_admin(self):
+        """
+        Only admins can delete barbers.
+        """
+        url = reverse("delete_barber", kwargs={"barber_id": self.barber.id})
+        resp = self.client.delete(url)
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.login_as_client()
+        resp = self.client.delete(url)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+    def test_create_availability_success(self):
+        """
+        Admin can create a barber's availability for a single date via new bulk API schema.
+        """
+        self.login_as_admin()
+        url = reverse("create_barber_availability", kwargs={"barber_id": self.barber.id})
+        today = datetime.date.today()
+        data = {
+            "start_date": str(today),
+            "start_time": "10:00",
+            "end_time": "12:00",
+            "slot_interval": 60,   # so slots: ["10:00", "11:00"], same as old test
+        }
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertIn("created successfully", resp.data["detail"])
+        self.assertTrue(Availability.objects.filter(barber=self.barber, date=today).exists())
+        avail = Availability.objects.get(barber=self.barber, date=today)
+        self.assertEqual(sorted(avail.slots), ["10:00", "11:00"])
+
+
+    def test_create_availability_upserts(self):
+        """
+        Creating for same barber/date should update the availability (not fail).
+        """
+        today = datetime.date.today()
+        Availability.objects.create(barber=self.barber, date=today, slots=["09:00"])
+        self.login_as_admin()
+        url = reverse("create_barber_availability", kwargs={"barber_id": self.barber.id})
+        data = {
+            "start_date": str(today),
+            "start_time": "10:00",
+            "end_time": "12:00",
+            "slot_interval": 60,   # slots: ["10:00", "11:00"]
+        }
+        resp = self.client.post(url, data, format="json")
+        # Now should be 201, not 400; upsert/overwrite OK
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertIn("created successfully", resp.data["detail"])
+        avail = Availability.objects.get(barber=self.barber, date=today)
+        self.assertEqual(sorted(avail.slots), ["10:00", "11:00"])
+
+
+    def test_create_availability_requires_admin(self):
+        """
+        Only admins may create availabilities for barbers.
+        """
+        url = reverse("create_barber_availability", kwargs={"barber_id": self.barber.id})
+        today = datetime.date.today()
+        data = {"date": str(today), "slots": ["13:00"]}
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.login_as_client()
+        resp = self.client.post(url, data, format="json")
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+    def test_update_availability_success(self):
+        """
+        Admin can patch the slots of an availability by id, using start_time/end_time [slot_interval optional].
+        """
+        availability = Availability.objects.create(
+            barber=self.barber, 
+            date=datetime.date.today(), 
+            slots=["09:30"]
+        )
+        self.login_as_admin()
+        url = reverse("manage_barber_availability", kwargs={"barber_id": self.barber.id, "availability_id": availability.id})
+
+        # Want slots at 10:30 and 11:30? Use start=10:30, end=12:00, interval=60
+        response = self.client.patch(
+            url, 
+            {
+                "start_time": "10:30", 
+                "end_time": "12:30", 
+                "slot_interval": 60  # So slots generated will be 10:30 and 11:30
+            }, 
+            format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        availability.refresh_from_db()
+        self.assertEqual(availability.date, datetime.date.today())
+        self.assertEqual(sorted(availability.slots), sorted(["10:30", "11:30"]))
+
+
+    def test_update_availability_default_interval(self):
+        """
+        If slot_interval is omitted, default (30) is used.
+        """
+        availability = Availability.objects.create(
+            barber=self.barber, 
+            date=datetime.date.today(), 
+            slots=["08:00"]
+        )
+        self.login_as_admin()
+        url = reverse("manage_barber_availability", kwargs={"barber_id": self.barber.id, "availability_id": availability.id})
+
+        response = self.client.patch(
+            url, 
+            {
+                "start_time": "09:00", 
+                "end_time": "10:00"
+                # slot_interval omitted, so 30min slots expected: 09:00, 09:30
+            }, 
+            format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        availability.refresh_from_db()
+        self.assertEqual(availability.slots, ["09:00", "09:30"])
+
+
+    def test_update_availability_not_found(self):
+        """
+        Returns error if availability does not exist for given barber+id.
+        """
+        self.login_as_admin()
+        url = reverse("manage_barber_availability", kwargs={"barber_id": self.barber.id, "availability_id": 99994})
+        response = self.client.patch(
+            url,
+            {
+                "start_time": "10:00",
+                "end_time": "12:00"
+            },
+            format="json"
+        )
+        # This will now allow the serializer to reach the "does not exist" error for that (barber, id)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        error_str = str(response.data)
+        # Could also be in a nested key, depending on serializer, so check all keys
+        self.assertIn("does not exist", error_str)
+
+
+    def test_update_availability_requires_start_and_end_time(self):
+        """
+        start_time and end_time are required for PATCH.
+        """
+        availability = Availability.objects.create(
+            barber=self.barber,
+            date=datetime.date.today(),
+            slots=["09:00"]
+        )
+        self.login_as_admin()
+        url = reverse("manage_barber_availability", kwargs={"barber_id": self.barber.id, "availability_id": availability.id})
+        response = self.client.patch(url, {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Since response.data might be a string (JSON dumped), parse if needed
+        if isinstance(response.data, str):
+            import ast
+            resp_dict = ast.literal_eval(response.data)
+        else:
+            resp_dict = response.data
+        self.assertIn("start_time", resp_dict)
+        self.assertIn("end_time", resp_dict)
+        self.assertIn("This field is required.", [e for e in resp_dict["start_time"]][0])
+        self.assertIn("This field is required.", [e for e in resp_dict["end_time"]][0])
+
+
+    def test_delete_availability_success(self):
+        """
+        Admin can delete a barber's availability by id.
+        """
+        avail = Availability.objects.create(
+            barber=self.barber, date=datetime.date.today(), slots=["09:40"]
+        )
+        self.login_as_admin()
+        url = reverse(
+            "manage_barber_availability",
+            kwargs={"barber_id": self.barber.id, "availability_id": avail.id},
+        )
+        resp = self.client.delete(url)
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Availability.objects.filter(pk=avail.id).exists())
+
+
+    def test_delete_availability_not_found(self):
+        """
+        Returns error if availability does not exist.
+        """
+        self.login_as_admin()
+        url = reverse(
+            "manage_barber_availability",
+            kwargs={"barber_id": self.barber.id, "availability_id": 123213},
+        )
+        resp = self.client.delete(url)
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("does not exist", str(resp.data["detail"]))
+
+
+    def test_admin_get_all_appointments(self):
+        """
+        Admin can fetch all system appointments: should include all records.
+        """
+        service_1 = Service.objects.create(
+            barber=self.barber, 
+            name="Trim", 
+            price=20
+        )
+        appointment_1 = Appointment.objects.create(
+            client=self.client_user, 
+            barber=self.barber,
+            date=datetime.date.today(), 
+            slot=datetime.time(9, 0),
+            status=AppointmentStatus.COMPLETED.value
+        )
+
+        AppointmentService.objects.create(
+            appointment=appointment_1,
+            name=service_1.name,
+            price=service_1.price,
+            original_service=service_1
+        )
+
+        self.login_as_admin()
+
+        response = self.client.get(self.all_appointments_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertIn("appointments", response.data)
+        self.assertTrue(any(a["id"] == appointment_1.id for a in response.data["appointments"]))

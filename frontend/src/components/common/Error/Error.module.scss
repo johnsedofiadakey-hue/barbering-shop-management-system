@@ -1,0 +1,16 @@
+@use '@styles/variables.module.scss' as *;
+@use '@styles/classes.module.scss' as *;
+
+.error {
+  padding: 0.7em;
+  background: $color-error-bg;
+  border: 1px solid $border-error;
+  border-radius: $border-radius;
+
+  color: $color-error;
+  font-size: 1.2rem;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

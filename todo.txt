@@ -1,0 +1,65 @@
+
+What to do:
+
+1. Backend:
+
+Important:
+  - add change email functionality in PATCH /profile endpoint, that automatically sends email verification
+  - add date based statistics for graph display
+
+Proposed:
+  - add return json object after creation or update for anything  https://openwebui.aspire.local/c/9d5f8f49-9f18-4937-ba9e-c7839bfb9b70
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+2. Frontend:
+
+Important:  
+  ...
+  
+Proposed:
+  - likely
+    - enhance modal to stop it from closing while loading
+
+    - return availabilities and appointmentss from API in date sorted order, (not text based as it is rn)  (active appointment more recent on top)
+    - when creating appointment check if selected avaiability is not past
+ 
+    - add responsivity to sidebar, show toggle button on header, width 100% for (small screens)
+    - add media queries for screen sizes on each layout component 
+    - fix settings page responsivity, input fields get of the card, on small screens
+    
+  - unlikely
+    - add loading prop to StatCard like Pagination (use it in dashboard instead of external if isLoading <Spinner/>)
+    - add skeleton loading for page components
+
+    - fix table text overflow when screen width is small (still gets cluttered)
+    - add error message when loading tables if the api request fails
+
+    - fix trash and warning icons in the buttons not getting white when hovered in profile settings (works in dev not in prod)
+
+    - cleanup Form code, make it work automagically (Form.Button, auto fields, Form.Input, etc)
+
+    - add view barber profile on clicking barber
+
+    - change structure of project:
+      - you can register as barbershop owner, then invite your own barbers
+      - or you can register as client and view barbershops
+      - admim can view evrything about the platform
+      - services are like tags, barbers can add them to their own list, but not create new ones (although this is a pricing problem as it has to be the same for everyone)
+      
+-----------------------------------------------------------------------------------------------------------------------------------------
+3. Docs:
+
+Important:
+
+  - diagrammi di progettazione
+    - fai il diagramma dei componenti
+    - fai i diagrammi delle macchine a stati (scegliere 3-4 classi da modellare)
+  
+  - diagrammi di implementazione
+    - fai il diagramma di deployment (sta gia su github)
+    - fai le immagini di mockup (screenshottare il progetto)
+    - fai la descrizione unit tests cosa si è testato, scelte implementative (screenshotta il codice dei test gia fatto)
+
+Proposed:
+  - correggi i diagrammi di casi d'uso
+  - correggi i diagrammi di sequenza e i rispettivi di attivita

@@ -1,0 +1,149 @@
+@use '@styles/variables.module.scss' as *;
+@use '@styles/classes.module.scss' as *;
+
+@use 'sass:color';
+
+.button {
+  width: fit-content;
+  box-sizing: border-box;
+
+  font-family: inherit; // keep if you want to inherit font family
+  line-height: normal;
+
+  border: none;
+  outline: none;
+  border-radius: $border-radius;
+  text-decoration: none;
+  color: inherit;
+  appearance: none;
+  user-select: none;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    background 0.18s,
+    transform 0.18s cubic-bezier(0.4, 0.05, 0.2, 1);
+
+  &:disabled,
+  &[aria-disabled='true'] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// Style modifiers
+
+.primary {
+  background: $color-primary;
+  color: $color-light;
+  border: 1px solid $border;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background-color: $color-lighter;
+    color: $color-light;
+    border-color: $color-primary;
+  }
+}
+
+.secondary {
+  background-color: $color-light;
+  color: $color-primary;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background-color: $color-accent;
+    color: $color-light;
+  }
+}
+
+.borderless {
+  background: $color-primary;
+  color: $color-light;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background-color: $color-lighter;
+    color: $color-light;
+  }
+}
+
+.translight {
+  background: none;
+  color: $color-primary;
+  border: 1px solid $border;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background-color: $color-lighter;
+    color: $color-light;
+    border-color: $color-primary;
+  }
+}
+
+.transdark {
+  background: none;
+  color: $color-light;
+  border: 1px solid $border;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background-color: $color-lighter;
+    color: $color-light;
+    border-color: $color-primary;
+  }
+}
+
+.link {
+  // background: $color-primary;
+  color: $color-primary;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    // background-color: $color-lighter;
+    // color: $color-light;
+    text-decoration: underline;
+  }
+}
+
+.animated {
+  padding: 0;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    transform: scale(1.07); // scales up by 7%
+  }
+}
+
+.muted {
+  background: transparent;
+  color: $color-muted;
+  border: 1px solid $border;
+
+  pointer-events: none;
+}
+
+.gold {
+  background: $color-gold;
+  color: $color-primary;
+  border: 1px solid $border-hover;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background-color: $color-gold-strong;
+    color: $color-primary;
+  }
+}
+
+.goldoutline {
+  background: transparent;
+  color: $color-on-dark;
+  border: 1px solid $border-hover;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background-color: $color-gold;
+    color: $color-primary;
+  }
+}
+
+// Size modifier
+.wide {
+  width: 100%;
+}

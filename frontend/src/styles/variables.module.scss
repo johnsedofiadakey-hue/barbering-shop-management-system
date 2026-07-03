@@ -1,0 +1,64 @@
+// Main Colors
+$color-primary: #1c1712; // warm near-black (chrome bg + dark ink text)
+$color-secondary: #ece4d4; // warm ivory (headings-on-dark, light chip bg)
+$color-tertiary: #cdbfa0; // warm light gold-gray (muted light surfaces)
+$color-light: #f7f1e6; // warm near-white (light text + light surfaces)
+$color-accent: #b8842a; // gold brand accent
+$color-muted: #8f8672; // warm muted gray-brown
+$color-lighter: #2f2718; // dark hover shade
+$color-main: #100d0a; // page canvas, richest near-black
+
+// Gold accent tokens
+$color-gold: #c9952f; // primary gold (CTAs, brand highlights)
+$color-gold-strong: #e6b545; // brighter gold for hover/emphasis
+
+// Icon colors
+$color-icon: #dcb15a; // gold icon-circle bg
+$color-rating: #e2a730; // deeper amber-gold for stars
+
+// Card colors
+$color-card: #f4f2ee;
+$color-card-darker: #efebe8;
+$color-card-dark: #efdc9f;
+
+// Dark surface tokens (for dark-context cards, e.g. the public marketing pages)
+$color-surface-dark: #1a1510;
+$color-surface-dark-alt: #221b13;
+$color-on-dark: #f3ece0;
+
+// Borders/Shadows
+$border: #5a4c35;
+$border-light: #bab8b8;
+$border-error: #fba4a4;
+$border-hover: #d4af37;
+$border-dark: #3d3323; // border tone for dark-surface cards
+$border-radius: 8px;
+
+// Error colors
+$color-error-bg: #fae1e1;
+$color-error: #f44;
+
+// Tag colors
+$color-tag-green-bg: #e9f9eb;
+$color-tag-green-text: #23863a;
+$color-tag-green-border: #aae3b7;
+
+$color-tag-yellow-bg: #faf2dc;
+$color-tag-yellow-text: #9d6b07;
+$color-tag-yellow-border: #f8cd6f;
+
+$color-tag-blue-bg: #e6f0fa;
+$color-tag-blue-text: #1765ad;
+$color-tag-blue-border: #85b6e2;
+
+$color-tag-red-bg: $color-error-bg;
+$color-tag-red-text: $color-error;
+$color-tag-red-border: $border-error;
+
+// Screen sizes
+$bp-huge: 126.87em; //2030px
+$bp-large: 78.15em; // 1250px
+$bp-medium: 61.25em; // 980px
+$bp-medium-small: 48em; // 768px
+$bp-small: 37.5em; // 600px
+$bp-smallest: 31.25em; // 500px

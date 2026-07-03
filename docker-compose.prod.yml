@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    mem_limit: 100m
+
+  redis:
+    image: redis:7-alpine
+    mem_limit: 100m
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env.prod
+    environment:
+      - RUN_MIGRATIONS=1
+    depends_on:
+      - db
+      - redis
+    ports:
+      - '127.0.0.1:7001:8000'
+    volumes:
+      - /srv/barbermanager/media:/app/media
+    mem_limit: 100m
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env.prod
+    depends_on:
+      - db
+      - redis
+    command: celery -A config worker -l info --concurrency=1
+    mem_limit: 200m
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env.prod
+    depends_on:
+      - db
+      - redis
+    command: celery -A config beat -l info
+    mem_limit: 100m
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env.prod
+    ports:
+      - '127.0.0.1:3001:80'
+    mem_limit: 50m
+
+volumes:
+  postgres_data:

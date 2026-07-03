@@ -1,0 +1,153 @@
+import api from '@api';
+import { ENDPOINTS } from '@api/endpoints';
+
+/**
+ * Keys used for storing authentication tokens in localStorage.
+ */
+const STORAGE_KEYS = {
+  ACCESS: 'access_token',
+  REFRESH: 'refresh_token',
+};
+
+/**
+ * Retrieves the access token from localStorage.
+ */
+export function getAccessToken() {
+  return localStorage.getItem(STORAGE_KEYS.ACCESS);
+}
+
+/**
+ * Retrieves the refresh token from localStorage.
+ */
+export function getRefreshToken() {
+  return localStorage.getItem(STORAGE_KEYS.REFRESH);
+}
+
+/**
+ * Stores the access and refresh tokens in localStorage.
+ */
+export function setTokens({ access, refresh }) {
+  localStorage.setItem(STORAGE_KEYS.ACCESS, access);
+  localStorage.setItem(STORAGE_KEYS.REFRESH, refresh);
+}
+
+/**
+ * Removes the access and refresh tokens from localStorage.
+ */
+export function removeTokens() {
+  localStorage.removeItem(STORAGE_KEYS.ACCESS);
+  localStorage.removeItem(STORAGE_KEYS.REFRESH);
+}
+
+/**
+ * Retrieves the current users's information.
+ */
+export async function getCurrentUser() {
+  const { data } = await api.instance.get(ENDPOINTS.auth.me);
+  return data;
+}
+
+/**
+ * Logs in a user using email or username along with password.
+ * Stores the received tokens in localStorage.
+ */
+export async function login({ email, username, password }) {
+  const payload = { password };
+  if (email) payload.email = email;
+  if (username) payload.username = username;
+
+  const { data } = await api.instance.post(ENDPOINTS.auth.login, payload);
+  const { user, token } = data;
+
+  setTokens({
+    access: token.access_token,
+    refresh: token.refresh_token,
+  });
+
+  return user; // return the user directly!
+}
+
+/**
+ * Logs out the user by invalidating the refresh token on the server
+ */
+export async function logout() {
+  const refresh = getRefreshToken();
+  try {
+    if (refresh) {
+      await api.instance.post(ENDPOINTS.auth.logout, { refresh_token: refresh });
+    }
+  } catch {
+    // ignore API errors during logout
+  }
+  removeTokens();
+}
+
+/**
+ * Refreshes the access token using the refresh token.
+ */
+export async function refreshToken() {
+  const refresh = getRefreshToken();
+  if (!refresh) throw new Error('No refresh token');
+
+  const { data } = await api.instance.post(ENDPOINTS.auth.refresh, { refresh_token: refresh });
+
+  localStorage.setItem(STORAGE_KEYS.ACCESS, data.access_token);
+
+  return data;
+}
+
+/**
+ * Requests a one-time login code sent via SMS to the given phone number.
+ */
+export async function requestOtp(phoneNumber) {
+  const { data } = await api.instance.post(ENDPOINTS.auth.requestOtp, { phone_number: phoneNumber });
+  return data;
+}
+
+/**
+ * Verifies a one-time code and logs the client in.
+ * Creates the client account on first login. Stores the received tokens in localStorage.
+ */
+export async function verifyOtp(phoneNumber, code) {
+  const { data } = await api.instance.post(ENDPOINTS.auth.verifyOtp, { phone_number: phoneNumber, code });
+  const { user, token } = data;
+
+  setTokens({
+    access: token.access_token,
+    refresh: token.refresh_token,
+  });
+
+  return user;
+}
+
+/**
+ * Registers a new barber account using a verification token and UID.
+ */
+export async function registerBarber(uidb64, token, barberData) {
+  const { data } = await api.instance.post(ENDPOINTS.auth.registerBarber(uidb64, token), barberData);
+  return data;
+}
+
+/**
+ *  Gets the email associated to the user from the given uid64 and token, if valid
+ */
+export async function getEmailFromToken(uidb64, token) {
+  const { data } = await api.instance.get(ENDPOINTS.auth.emailFromToken(uidb64, token));
+  return data;
+}
+
+/**
+ * Sends a password reset request to the provided email address.
+ */
+export async function requestPasswordReset(email) {
+  const { data } = await api.instance.post(ENDPOINTS.auth.resetPassword, { email });
+  return data;
+}
+
+/**
+ * Confirms and applies a new password using the reset token and UID.
+ */
+export async function confirmPasswordReset(uidb64, token, password) {
+  const { data } = await api.instance.post(ENDPOINTS.auth.resetPasswordConfirm(uidb64, token), { password });
+  return data;
+}
