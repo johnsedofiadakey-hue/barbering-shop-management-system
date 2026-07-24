@@ -52,19 +52,128 @@
 }
 
 @media (max-width: $bp-medium-small) {
+  /* Hide the regular widget in normal document flow on mobile */
   .bookingWidget {
-    padding: 2rem;
-    gap: 2rem;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 3rem 2rem 2rem;
+    border-radius: 24px 24px 0 0;
+    background: $surface-base;
+    border-top: 1px solid $border-surface;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    z-index: 1000;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    visibility: hidden;
+    max-height: 90vh;
+    overflow-y: auto;
+    
+    &.sheetOpen {
+      transform: translateY(0);
+      visibility: visible;
+    }
 
     .layout {
       flex-direction: column;
       gap: 2rem;
     }
 
+    /* Sticky Footer */
     .footer {
+      position: sticky;
+      bottom: -2rem; /* Account for padding */
+      left: 0;
+      width: 100%;
+      background: rgba(14, 13, 12, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 1.5rem 0;
+      margin-top: auto;
+      border-top: 1px solid $border-surface;
       flex-direction: column;
       align-items: stretch;
       text-align: center;
+      gap: 1.5rem;
+      z-index: 10;
     }
+
+    .confirmBtn {
+      width: 100%;
+    }
+  }
+
+  /* Sheet Handle for visual cue */
+  .sheetHandle {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background-color: $border-surface;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  /* Sheet Backdrop */
+  .sheetBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 1;
+    animation: fadeIn 0.3s ease forwards;
+  }
+
+  /* Floating Action Button (FAB) */
+  .mobileFab {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: $color-gold;
+    color: $color-ink-on-gold;
+    border: none;
+    border-radius: 30px;
+    padding: 1.2rem 2.5rem;
+    font-size: 1.6rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 16px rgba(197, 160, 89, 0.4);
+    z-index: 900;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:active {
+      transform: translateX(-50%) scale(0.96);
+    }
+    
+    svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+/* Hide Mobile elements on desktop */
+@media (min-width: $bp-medium-small + 1px) {
+  .mobileFab, .sheetBackdrop, .sheetHandle {
+    display: none;
   }
 }

@@ -1,108 +1,50 @@
-import { useState } from 'react';
-import {
-  format,
-  addMonths,
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  isSameMonth,
-  isSameDay,
-  addDays,
-  isBefore,
-  startOfDay,
-} from 'date-fns';
+import { useEffect, useRef } from 'react';
+import { format, isSameDay, addDays, startOfDay } from 'date-fns';
 import styles from './Calendar.module.scss';
-import Icon from '@components/common/Icon/Icon';
 
 function Calendar({ selectedDate, onSelectDate }) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
+  const scrollRef = useRef(null);
   const today = startOfDay(new Date());
 
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  // Generate the next 30 days
+  const days = Array.from({ length: 30 }).map((_, i) => addDays(today, i));
 
-  const renderHeader = () => {
-    return (
-      <div className={styles.header}>
-        <button type="button" className={styles.navButton} onClick={prevMonth}>
-          <Icon name="chevron-left" />
-        </button>
-        <div className={styles.currentMonth}>{format(currentMonth, 'MMMM yyyy')}</div>
-        <button type="button" className={styles.navButton} onClick={nextMonth}>
-          <Icon name="chevron-right" />
-        </button>
-      </div>
-    );
-  };
-
-  const renderDays = () => {
-    const days = [];
-    const startDate = startOfWeek(currentMonth);
-
-    for (let i = 0; i < 7; i++) {
-      days.push(
-        <div className={styles.dayName} key={i}>
-          {format(addDays(startDate, i), 'EEE')}
-        </div>,
-      );
+  const handleSelect = (day) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(20);
     }
-    return <div className={styles.daysRow}>{days}</div>;
+    onSelectDate(day);
   };
 
-  const renderCells = () => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart);
-    const endDate = endOfWeek(monthEnd);
-
-    const rows = [];
-    let days = [];
-    let day = startDate;
-    let formattedDate = '';
-
-    while (day <= endDate) {
-      for (let i = 0; i < 7; i++) {
-        formattedDate = format(day, 'd');
-        const cloneDay = day;
-        const isPast = isBefore(day, today);
-        const isSelected = selectedDate && isSameDay(day, selectedDate);
-        const isCurrentMonth = isSameMonth(day, monthStart);
-
-        days.push(
-          <div
-            className={`${styles.cell} ${
-              !isCurrentMonth ? styles.disabled : isPast ? styles.past : isSelected ? styles.selected : ''
-            }`}
-            key={day}
-            onClick={() => {
-              if (isCurrentMonth && !isPast) {
-                onSelectDate(cloneDay);
-              }
-            }}
-          >
-            <span className={styles.dateNumber}>{formattedDate}</span>
-          </div>,
-        );
-        day = addDays(day, 1);
+  // Optional: scroll the selected date into view on mount if it exists
+  useEffect(() => {
+    if (selectedDate && scrollRef.current) {
+      const selectedEl = scrollRef.current.querySelector(`.${styles.selected}`);
+      if (selectedEl) {
+        selectedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
-      rows.push(
-        <div className={styles.row} key={day}>
-          {days}
-        </div>,
-      );
-      days = [];
     }
-    return <div className={styles.body}>{rows}</div>;
-  };
+  }, [selectedDate]); // Only on mount/selectedDate change
 
   return (
-    <div className={styles.calendar}>
-      {renderHeader()}
-      {renderDays()}
-      {renderCells()}
+    <div className={styles.calendarStrip} ref={scrollRef}>
+      {days.map((day) => {
+        const isSelected = selectedDate && isSameDay(day, selectedDate);
+        const isToday = isSameDay(day, today);
+
+        return (
+          <button
+            key={day.toISOString()}
+            className={`${styles.dayBubble} ${isSelected ? styles.selected : ''}`}
+            onClick={() => handleSelect(day)}
+            type="button"
+          >
+            <span className={styles.month}>{format(day, 'MMM')}</span>
+            <span className={styles.dateNumber}>{format(day, 'd')}</span>
+            <span className={styles.dayName}>{isToday ? 'Today' : format(day, 'EEE')}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

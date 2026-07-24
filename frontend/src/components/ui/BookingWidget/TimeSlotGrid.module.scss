@@ -35,7 +35,8 @@
     background: transparent;
     border: 1px solid $border-subtle;
     border-radius: $border-radius;
-    padding: 1rem 0.5rem;
+    padding: 1.2rem 0.5rem;
+    min-height: 48px;
     color: $text-body;
     font-weight: 500;
     cursor: pointer;

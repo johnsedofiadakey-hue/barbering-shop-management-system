@@ -4,6 +4,7 @@ import * as path from 'path';
 import react from '@vitejs/plugin-react';
 import eslint from 'vite-plugin-eslint';
 import svgr from 'vite-plugin-svgr';
+import { VitePWA } from 'vite-plugin-pwa';
 
 /**
  * Util function to check if the given contentType is allowed to be printed (for debugging purposes)
@@ -25,6 +26,26 @@ export default defineConfig({
     eslint({
       failOnError: true, // Stop build on ESLint errors
       failOnWarning: false, // Don't stop build on warnings
+    }),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['assets/icons/barbermanager.svg'],
+      manifest: {
+        name: 'BarberManager',
+        short_name: 'BarberMgr',
+        description: 'Premium barber booking with live availability.',
+        theme_color: '#0e0d0c',
+        background_color: '#0e0d0c',
+        display: 'standalone',
+        icons: [
+          {
+            src: 'assets/icons/barbermanager.svg',
+            sizes: '192x192 512x512',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+        ],
+      },
     }),
   ],
 

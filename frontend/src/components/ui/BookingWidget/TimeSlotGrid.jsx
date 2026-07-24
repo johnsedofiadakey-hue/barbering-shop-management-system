@@ -40,7 +40,12 @@ function TimeSlotGrid({ selectedDate, availableSlots = [], selectedTime, onSelec
               key={slot.time}
               className={`${styles.slotBtn} ${!slot.available ? styles.unavailable : ''} ${isSelected ? styles.selected : ''}`}
               disabled={!slot.available}
-              onClick={() => onSelectTime(slot.time)}
+              onClick={() => {
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                  navigator.vibrate(20);
+                }
+                onSelectTime(slot.time);
+              }}
             >
               {slot.time}
             </button>
