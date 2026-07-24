@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { isAnyFieldSet } from '@utils/utils';
 import styles from './ClientSettings.module.scss';
@@ -15,7 +16,8 @@ import Spinner from '@components/common/Spinner/Spinner';
 import Error from '@components/common/Error/Error';
 
 function ClientSettings() {
-  const { profile, setProfile, logout } = useAuth();
+  const { profile, setProfile, logout, isLoggingOut } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false); // Used to disable the update profile button
@@ -91,14 +93,9 @@ function ClientSettings() {
   /**
    * Validate at least one field is provided, matching backend logic
    */
-  const validateUpdateProfile = ({ username, name, surname, phone_number }) => {
-    if (
-      (!username || username.trim() === '') &&
-      (!name || name.trim() === '') &&
-      (!surname || surname.trim() === '') &&
-      (!phone_number || phone_number.trim() === '')
-    ) {
-      return 'Provide at least one field to update: Username, Name, Surname or Phone Number.';
+  const validateUpdateProfile = ({ username, name, surname }) => {
+    if ((!username || username.trim() === '') && (!name || name.trim() === '') && (!surname || surname.trim() === '')) {
+      return 'Provide at least one field to update: Username, Name or Surname.';
     }
     return undefined;
   };
@@ -107,14 +104,13 @@ function ClientSettings() {
    * Handles form submission for updating the profile data
    * Send only the filled fields to the API
    */
-  const handleUpdateProfile = async ({ username, name, surname, phone_number }) => {
+  const handleUpdateProfile = async ({ username, name, surname }) => {
     setIsUpdatingProfile(true);
 
     const payload = {};
     if (username && username.trim() !== '') payload.username = username.trim();
     if (name && name.trim() !== '') payload.name = name.trim();
     if (surname && surname.trim() !== '') payload.surname = surname.trim();
-    if (phone_number && phone_number.trim() !== '') payload.phone_number = phone_number.trim();
 
     try {
       await api.client.updateClientProfile(payload);
@@ -124,9 +120,36 @@ function ClientSettings() {
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/', { replace: true });
+  };
+
   return (
     <>
       <div className={styles.clientSettings}>
+        <header className={styles.pageHeader}>
+          <span className={styles.eyebrow}>Your account</span>
+          <h1>Profile & security</h1>
+          <p>Your verified phone keeps every booking connected to one private portal.</p>
+        </header>
+
+        <section className={styles.sessionCard}>
+          <div>
+            <span className={styles.sessionIcon}>
+              <Icon name="dial" size="md" />
+            </span>
+            <div>
+              <strong>{profile.phone_number}</strong>
+              <span>Verified phone · persistent login enabled</span>
+            </div>
+          </div>
+          <Button type="button" color="translight" size="md" onClick={handleLogout} disabled={isLoggingOut}>
+            {isLoggingOut ? <Spinner size="sm" /> : <Icon name="close" size="sm" />}
+            Log out of this phone
+          </Button>
+        </section>
+
         {/* Profile Update Card */}
         <StatCard icon="pen" label="Update Profile">
           {/* Profile Picture Management */}
@@ -137,7 +160,7 @@ function ClientSettings() {
               <Button
                 className={styles.actionBtn}
                 type="button"
-                color="primary"
+                color="gold"
                 size="md"
                 onClick={openUploadPicturePopup} //
               >
@@ -153,7 +176,7 @@ function ClientSettings() {
                 size="md"
                 onClick={openDeletePicturePopup} //
               >
-                <Icon name="trash" size="ty" black />
+                <Icon name="trash" size="ty" />
                 <span>Delete picture</span>
               </Button>
             </div>
@@ -163,7 +186,7 @@ function ClientSettings() {
           <section className={styles.updateProfileSection}>
             <Form
               className={styles.updateProfileForm}
-              initialFields={{ username: '', name: '', surname: '', phone_number: '' }}
+              initialFields={{ username: '', name: '', surname: '' }}
               onSubmit={handleUpdateProfile}
               validate={validateUpdateProfile} //
             >
@@ -176,14 +199,11 @@ function ClientSettings() {
                   size="md"
                   disabled={isUpdatingProfile}
                 />
-                <Input
-                  label="Phone Number"
-                  name="phone_number"
-                  type="tel"
-                  placeholder={profile.phone_number}
-                  size="md"
-                  disabled={isUpdatingProfile}
-                />
+                <div className={styles.verifiedPhone}>
+                  <span>Verified phone</span>
+                  <strong>{profile.phone_number}</strong>
+                  <small>Phone changes require a newly verified login and support-assisted transfer.</small>
+                </div>
               </div>
 
               <div className={styles.inputGroup}>
@@ -210,7 +230,7 @@ function ClientSettings() {
                 className={styles.saveBtn}
                 type="submit"
                 size="md"
-                color="primary"
+                color="gold"
                 disabled={isUpdatingProfile}
                 wide //
               >
@@ -242,7 +262,7 @@ function ClientSettings() {
               size="md"
               onClick={openDeleteProfilePopup} //
             >
-              <Icon name="warning" size="ty" black />
+              <Icon name="warning" size="ty" />
               <span>Delete profile</span>
             </Button>
           </section>

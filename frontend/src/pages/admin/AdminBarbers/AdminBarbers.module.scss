@@ -45,7 +45,7 @@
     display: flex; // need this to hide overflow
 
     .email {
-      color: $color-primary;
+      color: $text-strong;
       font-size: 1.2rem;
       font-weight: 600;
 
@@ -56,13 +56,13 @@
   }
 
   .revenue {
-    color: $color-primary;
+    color: $text-strong;
     font-size: 1.5rem;
     font-weight: 600;
   }
 
   .date {
-    color: $color-primary;
+    color: $text-strong;
     font-size: 1.2rem;
     font-weight: 600;
   }
@@ -75,5 +75,24 @@
   .actions {
     display: flex;
     gap: 2rem;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .admin-barbers {
+    margin: 1.4rem;
+
+    .action {
+      flex-direction: column-reverse;
+      gap: 0.8rem;
+
+      > * {
+        width: 100%;
+      }
+    }
+
+    .actions {
+      justify-content: flex-end;
+    }
   }
 }

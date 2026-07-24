@@ -49,6 +49,17 @@ export default defineConfig({
     },
   },
 
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'http-vendor': ['axios'],
+        },
+      },
+    },
+  },
+
   server: {
     host: true,
     watch: {
@@ -61,8 +72,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true, // websocket
-        configure: (proxy, _options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
+        configure: (proxy, _) => {
+          proxy.on('proxyReq', (proxyReq, req, _) => {
             let bodyData = [];
             req.on('data', (chunk) => {
               bodyData.push(chunk);
@@ -82,7 +93,7 @@ export default defineConfig({
             });
           });
 
-          proxy.on('proxyRes', (proxyRes, req, res) => {
+          proxy.on('proxyRes', (proxyRes, req, _) => {
             let body = [];
             proxyRes.on('data', (chunk) => {
               body.push(chunk);

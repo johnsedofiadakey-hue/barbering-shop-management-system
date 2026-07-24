@@ -13,6 +13,7 @@ const adminNav = [
   { to: '/admin/barbers', label: 'Barbers', icon: 'barber' },
   { to: '/admin/clients', label: 'Clients', icon: 'client' },
   { to: '/admin/appointments', label: 'Appointments', icon: 'appointment' },
+  { to: '/admin/catalog', label: 'Services & cuts', icon: 'service' },
   { to: '/admin/settings', label: 'Settings', icon: 'settings' },
 ];
 const barberNav = [
@@ -24,11 +25,10 @@ const barberNav = [
   { to: '/barber/settings', label: 'Settings', icon: 'settings' },
 ];
 const clientNav = [
-  { to: '/client/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { to: '/client/barbers', label: 'Barbers', icon: 'barber' },
+  { to: '/client/dashboard', label: 'Home', icon: 'dashboard' },
+  { to: '/client/appointments?book=1', label: 'Book', icon: 'scissors', primary: true },
   { to: '/client/appointments', label: 'Appointments', icon: 'appointment' },
-  { to: '/client/reviews', label: 'Reviews', icon: 'review' },
-  { to: '/client/settings', label: 'Settings', icon: 'settings' },
+  { to: '/client/settings', label: 'Account', icon: 'user' },
 ];
 
 function Sidebar() {
@@ -42,9 +42,15 @@ function Sidebar() {
     else if (profile.role === 'BARBER') navItems = barberNav;
     else if (profile.role === 'CLIENT') navItems = clientNav;
   }
+  const profileLabel =
+    profile?.role === 'CLIENT'
+      ? `${profile.name || ''} ${profile.surname || ''}`.trim() || 'Your account'
+      : profile?.username || profile?.email;
 
   return (
-    <aside className={`${styles.sidebar} ${open ? styles.open : styles.close}`}>
+    <aside
+      className={`${styles.sidebar} ${profile?.role === 'CLIENT' ? styles.clientSidebar : ''} ${open ? styles.open : styles.close}`}
+    >
       {isFetchingProfile ? (
         <Spinner />
       ) : (
@@ -56,7 +62,7 @@ function Sidebar() {
                   <ProfileImage src={profile.profile_image} />
 
                   <div className={styles.profileText}>
-                    <div className={styles.username}>{profile.username || profile.email}</div>
+                    <div className={styles.username}>{profileLabel}</div>
                     <div className={styles.role}>{profile.role?.toLowerCase() || ''}</div>
                   </div>
                 </div>
@@ -68,7 +74,7 @@ function Sidebar() {
                 {navItems.map((item) => (
                   <li key={item.to}>
                     <Button
-                      className={styles.navBtn}
+                      className={`${styles.navBtn} ${item.primary ? styles.primaryNav : ''}`}
                       nav
                       href={item.to}
                       size="md"
@@ -77,7 +83,9 @@ function Sidebar() {
                       wide
                     >
                       <span className={styles.line}>
-                        <Icon name={item.icon} size={'md'} />
+                        <span className={styles.navIcon}>
+                          <Icon name={item.icon} size={'md'} />
+                        </span>
                         {item.label}
                       </span>
                     </Button>

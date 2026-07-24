@@ -63,6 +63,15 @@ export async function deleteBarber(barberId) {
   await api.instance.delete(ENDPOINTS.admin.barber(barberId));
 }
 
+export async function updateBarber(barberId, patchData) {
+  const formData = new FormData();
+  Object.entries(patchData).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') formData.append(key, value);
+  });
+  const { data } = await api.instance.patch(ENDPOINTS.admin.barber(barberId), formData);
+  return data;
+}
+
 /**
  * Creates a new availability entry for a specific barber.
  */

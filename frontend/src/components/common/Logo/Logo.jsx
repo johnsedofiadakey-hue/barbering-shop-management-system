@@ -8,7 +8,7 @@ function Logo({ className, size = 'md', split, button }) {
 
   const content = (
     <>
-      <Icon name="barbermanager" size={size} />
+      <Icon name="barbermanager" size={size} className={styles.crest} />
       <span className={styles.text}>
         <span className={styles.light}>Barber</span>
         <span className={styles.dark}>Manager</span>

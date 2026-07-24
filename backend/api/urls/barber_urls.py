@@ -5,6 +5,7 @@ from ..views import (
     manage_barber_services,
     manage_barber_service,
     get_barber_appointments,
+    update_barber_appointment_status,
     get_barber_reviews,
 )
 
@@ -20,5 +21,6 @@ urlpatterns = [
     # Getters for authenticated barber
     path('availabilities/', get_barber_availabilities, name='get_barber_availabilities'),
     path('appointments/', get_barber_appointments, name='get_barber_appointments'),
+    path('appointments/<int:appointment_id>/', update_barber_appointment_status, name='update_barber_appointment_status'),
     path('reviews/', get_barber_reviews, name='get_barber_reviews'),
 ]

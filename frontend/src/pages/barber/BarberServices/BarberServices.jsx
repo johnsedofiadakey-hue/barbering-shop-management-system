@@ -14,6 +14,7 @@ import Spinner from '@components/common/Spinner/Spinner';
 function BarberServices() {
   const { profile } = useAuth();
   const [services, setServices] = useState([]);
+  const [currencySymbol, setCurrencySymbol] = useState('GH₵');
   const [isLoading, setIsLoading] = useState(true);
 
   // Popup states
@@ -41,6 +42,10 @@ function BarberServices() {
   useEffect(() => {
     if (profile?.role === 'BARBER') {
       fetchServices();
+      api.pub
+        .getShopSettings()
+        .then(({ shop }) => setCurrencySymbol(shop.currency_symbol || 'GH₵'))
+        .catch(() => {});
     }
   }, [profile, fetchServices]);
 
@@ -59,8 +64,8 @@ function BarberServices() {
   /**
    * Handles inviting a new service
    */
-  const handleCreateService = async ({ name, price }) => {
-    await api.barber.createBarberService({ name, price });
+  const handleCreateService = async ({ name, description, duration_minutes, price, image }) => {
+    await api.barber.createBarberService({ name, description, duration_minutes, price, image });
     closeCreatePopup();
     await fetchServices();
   };
@@ -77,8 +82,8 @@ function BarberServices() {
   /**
    * Handles updating the selected service
    */
-  const handleUpdateService = async (servivceId, { name, price }) => {
-    await api.barber.updateBarberService(servivceId, { name, price });
+  const handleUpdateService = async (serviceId, payload) => {
+    await api.barber.updateBarberService(serviceId, payload);
     closeUpdatePopup();
     await fetchServices();
   };
@@ -123,7 +128,7 @@ function BarberServices() {
             <Button
               className={styles.actionBtn}
               type="button"
-              color="primary"
+              color="gold"
               size="md"
               onClick={openCreatePopup} //
             >
@@ -136,28 +141,35 @@ function BarberServices() {
         {/* Table headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="scissors" size="ty" black />
-            <span className={styles.tableTitleName}>Name</span>
+            <Icon name="scissors" size="ty" />
+            <span className={styles.tableTitleName}>Service</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="revenue" size="ty" black />
+            <Icon name="hourglass" size="ty" />
+            <span className={styles.tableTitleName}>Duration</span>
+          </div>
+        </Pagination.Column>
+
+        <Pagination.Column>
+          <div className={styles.tableTitle}>
+            <Icon name="revenue" size="ty" />
             <span className={styles.tableTitleName}>Price</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="id" size="ty" black />
+            <Icon name="id" size="ty" />
             <span className={styles.tableTitleName}>Service ID</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="dial" size="ty" black />
+            <Icon name="dial" size="ty" />
             <span className={styles.tableTitleName}>Actions</span>
           </div>
         </Pagination.Column>
@@ -166,11 +178,20 @@ function BarberServices() {
         {services.map((service) => (
           <Pagination.Row key={service.id}>
             <Pagination.Cell>
-              <span className={styles.serviceName}>{service.name}</span>
+              <div className={styles.serviceIdentity}>
+                {service.image ? <img src={service.image} alt="" /> : <Icon name="scissors" size="md" />}
+                <span className={styles.serviceName}>{service.name}</span>
+              </div>
             </Pagination.Cell>
 
             <Pagination.Cell>
-              <span className={styles.servicePrice}>${service.price}</span>
+              <span>{service.duration_minutes} min</span>
+            </Pagination.Cell>
+
+            <Pagination.Cell>
+              <span className={styles.servicePrice}>
+                {currencySymbol} {service.price}
+              </span>
             </Pagination.Cell>
 
             <Pagination.Cell>
@@ -185,19 +206,19 @@ function BarberServices() {
                 <Button
                   type="button"
                   size="sm"
-                  color="animated"
+                  color="actionbtn"
                   onClick={() => openUpdatePopup(service)} //
                 >
-                  <Icon name="pen" size="ty" black />
+                  <Icon name="pen" size="ty" />
                 </Button>
 
                 <Button
                   type="button"
                   size="sm"
-                  color="animated"
+                  color="actionbtn"
                   onClick={() => openDeletePopup(service)} //
                 >
-                  <Icon name="trash" size="ty" black />
+                  <Icon name="trash" size="ty" />
                 </Button>
               </div>
             </Pagination.Cell>
@@ -208,13 +229,13 @@ function BarberServices() {
       {/* Create Service Modal */}
       <Modal
         open={createPopup}
-        fields={{ name: '', price: '' }}
+        fields={{ name: '', description: '', duration_minutes: 30, price: '', image: null }}
         action={{ submit: 'Create', loading: 'Creating...' }}
         onSubmit={handleCreateService}
         onClose={closeCreatePopup}
       >
         <Modal.Title icon="id">Create Service</Modal.Title>
-        <Modal.Description>Enter the service&apos;s name and price for you newly offered service.</Modal.Description>
+        <Modal.Description>Add a clear name, timing, and price so clients know exactly what they are booking.</Modal.Description>
 
         <Input
           label="Service name"
@@ -226,6 +247,17 @@ function BarberServices() {
         />
 
         <Input
+          label="Short description"
+          type="text"
+          name="description"
+          placeholder="Skin fade, line-up and finish"
+          maxLength={240}
+          size="md"
+        />
+
+        <Input label="Duration (minutes)" type="number" name="duration_minutes" min="10" max="480" required size="md" />
+
+        <Input
           label="Service Price"
           type="number"
           min="1"
@@ -235,6 +267,8 @@ function BarberServices() {
           placeholder="25.99"
           size="md" //
         />
+
+        <Input label="Service image" type="file" name="image" accept="image/*" placeholder="Choose service photo" />
       </Modal>
 
       {/* Delete Service Modal */}
@@ -253,9 +287,11 @@ function BarberServices() {
       {/* Update Service Modal */}
       <Modal
         open={updatePopup.open}
-        fields={{ name: '', price: '' }}
+        fields={{ name: '', description: '', duration_minutes: '', price: '', image: null }}
         action={{ submit: 'Update', loading: 'Updating...' }}
-        onValidate={(payload) => isAnyFieldSet(payload, 'Provide a new name, price, or both to update the service.')}
+        onValidate={(payload) =>
+          isAnyFieldSet(payload, 'Provide a new name, description, duration, price, or image to update the service.')
+        }
         onSubmit={(payload) => handleUpdateService(updatePopup.service?.id, cleanPayload(payload))}
         onClose={closeUpdatePopup}
       >
@@ -273,6 +309,25 @@ function BarberServices() {
         />
 
         <Input
+          label="Short description"
+          type="text"
+          name="description"
+          placeholder={updatePopup.service?.description || 'Add a concise description'}
+          maxLength={240}
+          size="md"
+        />
+
+        <Input
+          label="Duration (minutes)"
+          type="number"
+          name="duration_minutes"
+          min="10"
+          max="480"
+          placeholder={updatePopup.service?.duration_minutes}
+          size="md"
+        />
+
+        <Input
           label="Service Price"
           type="number"
           min="1"
@@ -281,6 +336,8 @@ function BarberServices() {
           placeholder={updatePopup.service?.price}
           size="md" //
         />
+
+        <Input label="Replace image" type="file" name="image" accept="image/*" placeholder="Choose a new service photo" />
       </Modal>
     </>
   );

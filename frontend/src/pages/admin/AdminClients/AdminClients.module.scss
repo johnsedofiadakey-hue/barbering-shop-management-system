@@ -38,7 +38,7 @@
     display: flex; // need this to hide overflow
 
     .email {
-      color: $color-primary;
+      color: $text-strong;
       font-size: 1.2rem;
       font-weight: 600;
 
@@ -65,26 +65,26 @@
       }
 
       .appointment-slot {
-        color: $color-primary;
+        color: $text-strong;
         font-size: 1.05rem;
         font-weight: 500;
       }
 
       .no-appointment {
-        color: $color-primary;
+        color: $text-strong;
         font-size: 2rem;
       }
     }
   }
 
   .spent {
-    color: $color-primary;
+    color: $text-strong;
     font-size: 1.5rem;
     font-weight: 600;
   }
 
   .date {
-    color: $color-primary;
+    color: $text-strong;
     font-size: 1.2rem;
     font-weight: 600;
   }
@@ -108,5 +108,15 @@
   .tag {
     width: 7rem;
     text-align: center;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .admin-clients {
+    padding: 1.4rem;
+
+    .action .refresh-btn {
+      width: 100%;
+    }
   }
 }

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="icons.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  ::selection{background:rgba(197,160,89,.3);color:#f4eede}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2b241b;border-radius:20px;border:2px solid #0b0a09}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<div style="height:100vh;display:flex;flex-direction:column;font-family:'Hanken Grotesk',sans-serif;background:#0b0a09;color:#c9c2b5;overflow:hidden">
+
+  <!-- ===================== HEADER ===================== -->
+  <header style="height:66px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 26px;background:#111010;border-bottom:1px solid #262019;position:relative;z-index:20">
+    <div style="display:flex;align-items:center;gap:11px">
+      <img src="icons/barbermanager.svg" alt="" style="width:34px;height:34px;border-radius:9px;box-shadow:0 0 0 1px #2c2419">
+      <span style="font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:19px;letter-spacing:-.02em;color:#ece4d4">Barber<span style="color:#7d766a;font-weight:500">Manager</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ goLogin }}" style="height:38px;padding:0 16px;border-radius:9px;border:1px solid #2c2419;background:transparent;color:#b8b2a7;font-family:inherit;font-size:13.5px;font-weight:500;letter-spacing:.01em;cursor:pointer" style-hover="border-color:#4a3f2c;color:#ece4d4">Logout</button>
+        <div style="width:38px;height:38px;border-radius:50%;background:#1c1810;border:1px solid #3a2f1c;display:flex;align-items:center;justify-content:center;font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:14px;color:#c5a059">A</div>
+      </sc-if>
+      <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ goApp }}" style="height:38px;padding:0 20px;border-radius:9px;border:none;background:#c5a059;color:#1a140b;font-family:inherit;font-size:13.5px;font-weight:600;letter-spacing:.01em;cursor:pointer" style-hover="background:#d4b171">Log in</button>
+      </sc-if>
+    </div>
+  </header>
+
+  <!-- ===================== BODY ===================== -->
+  <div style="flex:1 1 auto;display:flex;min-height:0">
+
+    <!-- --------- SIDEBAR --------- -->
+    <sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}">
+      <aside style="width:{{ sidebarWidth }};flex:0 0 auto;background:#111010;border-right:1px solid #201a13;display:flex;flex-direction:column;position:relative;transition:width .25s cubic-bezier(.4,.05,.2,1)">
+        <button onClick="{{ toggleSidebar }}" title="Toggle sidebar" style="position:absolute;top:26px;right:-15px;z-index:30;width:30px;height:30px;border-radius:50%;border:1px solid #3a2f1c;background:#1a140b;color:#c5a059;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#241b0f">
+          <span style="width:15px;height:15px;-webkit-mask:{{ ic.menu }};mask:{{ ic.menu }};background:#c5a059"></span>
+        </button>
+
+        <sc-if value="{{ sidebarOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:22px 20px 18px;margin:0 6px 12px;border-bottom:1px solid #201a13;display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;border-radius:50%;background:#1c1810;border:1px solid #3a2f1c;display:flex;align-items:center;justify-content:center;font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:15px;color:#c5a059;flex:0 0 auto">A</div>
+            <div style="min-width:0">
+              <div style="font-size:14.5px;font-weight:600;color:#ece4d4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Adm1n15trAt0r</div>
+              <div style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7d766a;margin-top:1px">Admin</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <nav style="flex:1 1 auto;padding:8px 12px;overflow-y:auto">
+          <sc-for list="{{ nav }}" as="item" hint-placeholder-count="5">
+            <button onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:100%;display:flex;align-items:center;gap:13px;height:46px;padding:0 15px;margin-bottom:4px;border-radius:11px;border:1px solid {{ item.border }};background:{{ item.bg }};color:{{ item.color }};font-family:inherit;font-size:14.5px;font-weight:{{ item.weight }};letter-spacing:.005em;cursor:pointer;white-space:nowrap;overflow:hidden" style-hover="{{ item.hover }}">
+              <span style="flex:0 0 auto;width:20px;height:20px;-webkit-mask:{{ item.iconMask }};mask:{{ item.iconMask }};background:{{ item.iconColor }}"></span>
+              <sc-if value="{{ sidebarOpen }}" hint-placeholder-val="{{ true }}"><span>{{ item.label }}</span></sc-if>
+            </button>
+          </sc-for>
+        </nav>
+
+        <sc-if value="{{ sidebarOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:16px 22px;border-top:1px solid #201a13;display:flex;align-items:center;gap:9px">
+            <span style="width:16px;height:16px;-webkit-mask:{{ ic.scissors }};mask:{{ ic.scissors }};background:#5f5849"></span>
+            <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5f5849">Est. 2025</span>
+          </div>
+        </sc-if>
+      </aside>
+    </sc-if>
+
+    <!-- --------- MAIN --------- -->
+    <main style="flex:1 1 auto;display:flex;flex-direction:column;min-width:0;overflow:hidden">
+      <div style="flex:1 1 auto;overflow-y:auto">
+
+        <!-- ===== DASHBOARD ===== -->
+        <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:40px 44px 48px;max-width:1400px">
+            <div style="margin-bottom:32px">
+              <div style="font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:#c5a059;font-weight:600;margin-bottom:8px">Overview</div>
+              <h1 style="font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:34px;letter-spacing:-.02em;color:#f4eede;line-height:1">Dashboard</h1>
+              <p style="font-size:14.5px;color:#8f887c;margin-top:9px">Your shop at a glance — revenue, bookings and barber performance.</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+              <sc-for list="{{ stats }}" as="s" hint-placeholder-count="9">
+                <div style="background:linear-gradient(180deg,#181410 0%,#141109 100%);border:1px solid #29221a;border-radius:16px;padding:24px 24px 26px;position:relative;overflow:hidden" style-hover="border-color:#3a2f1c">
+                  <div style="display:flex;align-items:center;gap:13px;margin-bottom:22px">
+                    <div style="width:46px;height:46px;flex:0 0 auto;border-radius:50%;background:#211a10;border:1px solid #3a2f1c;display:flex;align-items:center;justify-content:center">
+                      <span style="width:22px;height:22px;-webkit-mask:{{ s.iconMask }};mask:{{ s.iconMask }};background:#c5a059"></span>
+                    </div>
+                    <div style="font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:#8f887c;font-weight:600;line-height:1.3">{{ s.label }}</div>
+                  </div>
+                  <sc-if value="{{ s.isValue }}" hint-placeholder-val="{{ true }}">
+                    <div style="font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:40px;letter-spacing:-.02em;color:#f4eede;line-height:1;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+                  </sc-if>
+                  <sc-if value="{{ s.isRating }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:16px">
+                      <div style="width:74px;height:74px;border-radius:50%;background:conic-gradient(#c5a059 {{ s.percent }}%, #2a231a 0);display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                        <div style="width:56px;height:56px;border-radius:50%;background:#141109;display:flex;align-items:baseline;justify-content:center;font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:22px;color:#f4eede">{{ s.value }}<span style="font-size:11px;color:#8f887c;font-weight:500;margin-left:1px">/5</span></div>
+                      </div>
+                      <div style="font-size:13px;color:#8f887c;line-height:1.5">Across all<br>reviewed cuts</div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== BARBERS ===== -->
+        <sc-if value="{{ isBarbers }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:40px 44px 48px;max-width:1500px">
+            <div style="background:linear-gradient(180deg,#161209 0%,#120f08 100%);border:1px solid #2b241a;border-radius:18px;overflow:hidden">
+              <!-- panel head -->
+              <div style="padding:26px 30px 22px;border-bottom:1px solid #241d13;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:15px">
+                  <div style="width:48px;height:48px;border-radius:13px;background:#211a10;border:1px solid #3a2f1c;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                    <span style="width:26px;height:26px;-webkit-mask:{{ ic.barber }};mask:{{ ic.barber }};background:#c5a059"></span>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#c5a059;font-weight:600;margin-bottom:3px">Roster</div>
+                    <h1 style="font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:26px;letter-spacing:-.02em;color:#f4eede;line-height:1">Barbers</h1>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <button style="height:42px;padding:0 18px;border-radius:10px;border:1px solid #2c2419;background:#191309;color:#d7d0c3;font-family:inherit;font-size:14px;font-weight:500;display:flex;align-items:center;gap:9px;cursor:pointer" style-hover="border-color:#4a3f2c;background:#1f180d">
+                    <span style="width:16px;height:16px;-webkit-mask:{{ ic.refresh }};mask:{{ ic.refresh }};background:#c5a059"></span>Refresh barbers</button>
+                  <button style="height:42px;padding:0 20px;border-radius:10px;border:none;background:#c5a059;color:#1a140b;font-family:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;cursor:pointer" style-hover="background:#d4b171">
+                    <span style="width:15px;height:15px;-webkit-mask:{{ ic.plus }};mask:{{ ic.plus }};background:#1a140b"></span>Invite barber</button>
+                </div>
+              </div>
+
+              <!-- table header -->
+              <div style="display:grid;grid-template-columns:2.1fr 2.2fr 1.1fr 1fr 1.1fr 1fr 0.9fr;gap:16px;padding:15px 30px;border-bottom:1px solid #241d13;background:#17120a">
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;-webkit-mask:{{ ic.user }};mask:{{ ic.user }};background:#8a8172"></span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8172;font-weight:600">User</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;-webkit-mask:{{ ic.email_base }};mask:{{ ic.email_base }};background:#8a8172"></span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8172;font-weight:600">Email</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;-webkit-mask:{{ ic.rating }};mask:{{ ic.rating }};background:#8a8172"></span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8172;font-weight:600">Rating</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;-webkit-mask:{{ ic.revenue }};mask:{{ ic.revenue }};background:#8a8172"></span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8172;font-weight:600">Revenue</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;-webkit-mask:{{ ic.spinner }};mask:{{ ic.spinner }};background:#8a8172"></span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8172;font-weight:600">Status</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;-webkit-mask:{{ ic.check }};mask:{{ ic.check }};background:#8a8172"></span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8172;font-weight:600">Joined</span></div>
+                <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8172;font-weight:600">Actions</span></div>
+              </div>
+
+              <!-- rows -->
+              <sc-for list="{{ barbers }}" as="b" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:2.1fr 2.2fr 1.1fr 1fr 1.1fr 1fr 0.9fr;gap:16px;padding:16px 30px;border-bottom:1px solid #1e1810;align-items:center" style-hover="background:#181209">
+                  <div style="display:flex;align-items:center;gap:13px;min-width:0">
+                    <div style="width:42px;height:42px;flex:0 0 auto;border-radius:50%;background:{{ b.avatarBg }};border:1px solid {{ b.avatarBorder }};display:flex;align-items:center;justify-content:center;font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:14px;color:{{ b.avatarColor }}">{{ b.initials }}</div>
+                    <div style="min-width:0">
+                      <div style="font-size:14.5px;font-weight:600;color:#ece4d4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</div>
+                      <div style="font-size:12.5px;color:#c5a059;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.handle }}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:13.5px;color:#9a9488;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.email }}</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#d7d0c3;margin-bottom:3px;font-variant-numeric:tabular-nums">{{ b.ratingText }}</div>
+                    <div style="display:flex;gap:2px">
+                      <sc-for list="{{ b.starArray }}" as="star" hint-placeholder-count="5">
+                        <span style="width:13px;height:13px;-webkit-mask:{{ star.mask }};mask:{{ star.mask }};background:{{ star.color }}"></span>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="font-family:'Schibsted Grotesk',sans-serif;font-size:15px;font-weight:600;color:#f4eede;font-variant-numeric:tabular-nums">{{ b.revenue }}</div>
+                  <div style="font-size:13px;color:#8f887c;font-variant-numeric:tabular-nums">{{ b.joined }}</div>
+                  <div>
+                    <span style="display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:20px;font-size:11.5px;font-weight:600;letter-spacing:.03em;background:{{ b.tagBg }};color:{{ b.tagColor }};border:1px solid {{ b.tagBorder }}">{{ b.status }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+                    <button title="Availabilities" style="width:34px;height:34px;border-radius:9px;border:1px solid #2c2419;background:#191309;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#c5a059;background:#211a10">
+                      <span style="width:16px;height:16px;-webkit-mask:{{ ic.availability }};mask:{{ ic.availability }};background:#b0a894"></span>
+                    </button>
+                    <button title="Delete" style="width:34px;height:34px;border-radius:9px;border:1px solid #2c2419;background:#191309;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="border-color:#a5563f;background:#211210">
+                      <span style="width:16px;height:16px;-webkit-mask:{{ ic.trash }};mask:{{ ic.trash }};background:#b0a894"></span>
+                    </button>
+                  </div>
+                </div>
+              </sc-for>
+
+              <!-- pagination -->
+              <div style="padding:18px 30px;display:flex;align-items:center;justify-content:flex-end;gap:14px">
+                <button style="width:34px;height:34px;border-radius:50%;border:1px solid #2c2419;background:transparent;color:#6f695f;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">‹</button>
+                <span style="font-size:13px;color:#8f887c">Page <span style="color:#ece4d4;font-weight:600">1</span> / 2</span>
+                <button style="width:34px;height:34px;border-radius:50%;border:1px solid #3a2f1c;background:#1a140b;color:#c5a059;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px" style-hover="background:#241b0f">›</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== PLACEHOLDER SECTIONS ===== -->
+        <sc-if value="{{ isPlaceholder }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:40px 44px;height:100%;display:flex;align-items:center;justify-content:center;min-height:60vh">
+            <div style="text-align:center;max-width:420px">
+              <div style="width:72px;height:72px;border-radius:20px;background:#1a140b;border:1px solid #2c2419;display:flex;align-items:center;justify-content:center;margin:0 auto 22px">
+                <span style="width:34px;height:34px;-webkit-mask:{{ placeholder.iconMask }};mask:{{ placeholder.iconMask }};background:#c5a059"></span>
+              </div>
+              <div style="font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c5a059;font-weight:600;margin-bottom:8px">Section</div>
+              <h1 style="font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:28px;color:#f4eede;letter-spacing:-.02em;margin-bottom:12px">{{ placeholder.title }}</h1>
+              <p style="font-size:14.5px;color:#8f887c;line-height:1.6">Built on the same charcoal-and-gold surfaces, tags and typography as Dashboard and Barbers — the unified system carries through every screen.</p>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== LOGIN ===== -->
+        <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+          <div style="min-height:100%;display:grid;grid-template-columns:1.05fr 1fr">
+            <!-- left panel -->
+            <div style="position:relative;padding:64px 60px;display:flex;flex-direction:column;justify-content:center;background:radial-gradient(120% 90% at 15% 10%, #1c1610 0%, #0e0b07 60%);border-right:1px solid #241d13;overflow:hidden">
+              <div style="position:absolute;top:-120px;left:-120px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(197,160,89,.16),transparent 65%);pointer-events:none"></div>
+              <div style="position:relative;max-width:440px">
+                <div style="font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:#c5a059;font-weight:600;margin-bottom:16px">Welcome back</div>
+                <h1 style="font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:42px;line-height:1.08;letter-spacing:-.025em;color:#f4eede;margin-bottom:16px">Log in with just your phone</h1>
+                <p style="font-size:15.5px;color:#9a9488;line-height:1.6;margin-bottom:36px">Your barber, one text away. No passwords, no fuss — the way a good shop should feel.</p>
+                <div style="display:flex;flex-direction:column;gap:18px">
+                  <div style="display:flex;align-items:center;gap:14px">
+                    <div style="width:42px;height:42px;flex:0 0 auto;border-radius:11px;background:#1c1810;border:1px solid #3a2f1c;display:flex;align-items:center;justify-content:center"><span style="width:20px;height:20px;-webkit-mask:{{ ic.dial }};mask:{{ ic.dial }};background:#c5a059"></span></div>
+                    <p style="font-size:14.5px;color:#c9c2b5">No password needed — we text you a code.</p>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:14px">
+                    <div style="width:42px;height:42px;flex:0 0 auto;border-radius:11px;background:#1c1810;border:1px solid #3a2f1c;display:flex;align-items:center;justify-content:center"><span style="width:20px;height:20px;-webkit-mask:{{ ic.appointment }};mask:{{ ic.appointment }};background:#c5a059"></span></div>
+                    <p style="font-size:14.5px;color:#c9c2b5">See, reschedule or cancel your bookings.</p>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:14px">
+                    <div style="width:42px;height:42px;flex:0 0 auto;border-radius:11px;background:#1c1810;border:1px solid #3a2f1c;display:flex;align-items:center;justify-content:center"><span style="width:20px;height:20px;-webkit-mask:{{ ic.review }};mask:{{ ic.review }};background:#c5a059"></span></div>
+                    <p style="font-size:14.5px;color:#c9c2b5">Review your barber after your cut.</p>
+                  </div>
+                </div>
+                <p style="font-size:13px;color:#6f695f;margin-top:36px;line-height:1.6;border-top:1px solid #241d13;padding-top:22px">First time? Just enter your number — your account is created automatically.</p>
+              </div>
+            </div>
+            <!-- right form -->
+            <div style="padding:64px 56px;display:flex;align-items:center;justify-content:center;background:#0b0a09">
+              <div style="width:100%;max-width:380px;background:linear-gradient(180deg,#161209 0%,#120f08 100%);border:1px solid #2b241a;border-radius:18px;padding:38px 34px 34px">
+                <h2 style="font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:24px;color:#f4eede;letter-spacing:-.02em;margin-bottom:6px">Login</h2>
+                <p style="font-size:13.5px;color:#8f887c;line-height:1.5;margin-bottom:26px">Enter your phone number and we'll text you a login code.</p>
+                <label style="display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8f887c;font-weight:600;margin-bottom:9px">Phone number</label>
+                <div style="height:48px;border-radius:10px;border:1px solid #2c2419;background:#0f0c07;display:flex;align-items:center;padding:0 15px;margin-bottom:22px">
+                  <span style="font-size:15px;color:#5f5849">+1&nbsp;</span><span style="font-size:15px;color:#4a463d">555 123 4567</span>
+                </div>
+                <button style="width:100%;height:50px;border-radius:10px;border:none;background:#c5a059;color:#1a140b;font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.01em;cursor:pointer;margin-bottom:16px" style-hover="background:#d4b171">Send code</button>
+                <div style="text-align:center">
+                  <span style="font-size:13.5px;color:#8f887c;cursor:pointer;border-bottom:1px solid #3a342c;padding-bottom:1px" style-hover="color:#c5a059">Barber or admin? Staff login</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <!-- FOOTER -->
+      <footer style="flex:0 0 auto;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;border-top:1px solid #201a13;background:#0d0b08">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:13px;color:#8a8172">Barber<span style="color:#5f5849;font-weight:500">Manager</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px">
+          <span style="width:16px;height:16px;-webkit-mask:{{ ic.github }};mask:{{ ic.github }};background:#5f5849;cursor:pointer" style-hover="background:#c5a059"></span>
+          <span style="width:16px;height:16px;-webkit-mask:{{ ic.docs }};mask:{{ ic.docs }};background:#5f5849;cursor:pointer" style-hover="background:#c5a059"></span>
+          <span style="width:16px;height:16px;-webkit-mask:{{ ic.bug }};mask:{{ ic.bug }};background:#5f5849;cursor:pointer" style-hover="background:#c5a059"></span>
+        </div>
+        <div style="font-size:12px;color:#5f5849">© 2025 CreepyMemes. All rights reserved.</div>
+      </footer>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:880},&quot;defaultScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;dashboard&quot;,&quot;options&quot;:[&quot;dashboard&quot;,&quot;barbers&quot;,&quot;login&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;startCollapsed&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      screen: props.defaultScreen || 'dashboard',
+      sidebarOpen: !(props.startCollapsed || false),
+    };
+  }
+
+  componentDidMount() {
+    if (!window.BM_ICONS) {
+      this._t = setInterval(() => {
+        if (window.BM_ICONS) { clearInterval(this._t); this.forceUpdate(); }
+      }, 40);
+    }
+  }
+  componentWillUnmount() { if (this._t) clearInterval(this._t); }
+
+  stats = [
+    { icon: 'revenue', label: 'Total Revenue', value: '$173.59' },
+    { icon: 'barber', label: 'Total Barbers', value: '5' },
+    { icon: 'appointment', label: 'Total Appointments', value: '27' },
+    { icon: 'completed', label: 'Completed Appointments', value: '6' },
+    { icon: 'calendar', label: 'Ongoing Appointments', value: '6' },
+    { icon: 'cancelled', label: 'Cancelled Appointments', value: '15' },
+    { icon: 'client', label: 'Total Clients', value: '29' },
+    { icon: 'review', label: 'Total Reviews', value: '2' },
+    { icon: 'rating', label: 'Average Rating', isRating: true, value: '4.0', percent: 80 },
+  ];
+
+  barbers = [
+    { name: 'Elliot Alderson', handle: 'HackerMan_', initials: 'EA', email: 'markwolf@auraence.com', rating: 4.0, revenue: '$61.98', status: 'Active', active: true, joined: '2025 / 06 / 18' },
+    { name: 'Snoop Scissorson', handle: 'SnipDoggyDogg', initials: 'SS', email: 'douche2babe@receita-iof.org', rating: 4.0, revenue: '$49.99', status: 'Active', active: true, joined: '2025 / 06 / 18' },
+    { name: '[no name]', handle: 'B_b601ea24', initials: '?', email: 'scarface0628@hubglee.com', rating: 0.0, revenue: '$0', status: 'Invited', active: false, joined: '2025 / 07 / 17' },
+    { name: '[no name]', handle: 'B_cf16b4bb', initials: '?', email: 'sdhfkjsfhksjdfh@pp-ahbaab-al-ikhlash.c…', rating: 0.0, revenue: '$0', status: 'Invited', active: false, joined: '2025 / 07 / 17' },
+    { name: 'Obi Wan Kenobi', handle: 'JediFadeMaster', initials: 'OK', email: 'mishaseriy@redproxies.com', rating: 0.0, revenue: '$0', status: 'Active', active: true, joined: '2025 / 06 / 18' },
+  ];
+
+  nav = [
+    { key: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { key: 'barbers', label: 'Barbers', icon: 'barber' },
+    { key: 'clients', label: 'Clients', icon: 'client' },
+    { key: 'appointments', label: 'Appointments', icon: 'appointment' },
+    { key: 'settings', label: 'Settings', icon: 'settings' },
+  ];
+
+  setScreen(key) { this.setState({ screen: key }); }
+
+  renderVals() {
+    const M = window.BM_ICONS || {};
+    const screen = this.state.screen;
+    const placeholderMap = {
+      clients: { title: 'Clients', icon: 'client' },
+      appointments: { title: 'Appointments', icon: 'appointment' },
+      settings: { title: 'Settings', icon: 'settings' },
+    };
+
+    const nav = this.nav.map((n) => {
+      const active = n.key === screen;
+      return {
+        ...n,
+        iconMask: M[n.icon],
+        onClick: () => this.setScreen(n.key),
+        bg: active ? '#c5a059' : 'transparent',
+        border: active ? '#c5a059' : 'transparent',
+        color: active ? '#1a140b' : '#b0a894',
+        iconColor: active ? '#1a140b' : '#8f887c',
+        weight: active ? 600 : 500,
+        hover: active ? 'background:#d4b171' : 'background:rgba(197,160,89,.07);color:#ece4d4',
+      };
+    });
+
+    const stats = this.stats.map((s) => ({ ...s, iconMask: M[s.icon], isValue: !s.isRating, isRating: !!s.isRating }));
+
+    const barbers = this.barbers.map((b) => {
+      const filled = Math.round(b.rating);
+      return {
+        ...b,
+        ratingText: b.rating.toFixed(1),
+        avatarBg: b.active ? '#1c1810' : '#17140f',
+        avatarBorder: b.active ? '#3a2f1c' : '#2a2621',
+        avatarColor: b.active ? '#c5a059' : '#6f695f',
+        starArray: [1, 2, 3, 4, 5].map((i) => ({ mask: M.rating, color: i <= filled ? '#c5a059' : '#3a342c' })),
+        tagBg: b.active ? 'rgba(120,158,108,.12)' : 'rgba(197,160,89,.12)',
+        tagColor: b.active ? '#94c07f' : '#d4b171',
+        tagBorder: b.active ? 'rgba(120,158,108,.32)' : 'rgba(197,160,89,.34)',
+      };
+    });
+
+    const pl = placeholderMap[screen] || { title: '', icon: 'dashboard' };
+
+    return {
+      screen,
+      ic: M,
+      isApp: screen !== 'login',
+      isLogin: screen === 'login',
+      isDashboard: screen === 'dashboard',
+      isBarbers: screen === 'barbers',
+      isPlaceholder: !!placeholderMap[screen],
+      placeholder: { ...pl, iconMask: M[pl.icon] },
+      sidebarOpen: this.state.sidebarOpen,
+      sidebarWidth: this.state.sidebarOpen ? '266px' : '78px',
+      stats,
+      barbers,
+      nav,
+      toggleSidebar: () => this.setState((s) => ({ sidebarOpen: !s.sidebarOpen })),
+      goLogin: () => this.setScreen('login'),
+      goApp: () => this.setScreen('dashboard'),
+    };
+  }
+}
+</script>
+</body>
+</html>

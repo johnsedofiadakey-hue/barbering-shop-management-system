@@ -1,0 +1,65 @@
+@use '@styles/variables.module.scss' as *;
+
+.timeSlotGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  
+  .emptyState {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 200px;
+    background: rgba(22, 18, 9, 0.4);
+    border-radius: $border-radius-panel;
+    border: 1px dashed $border-surface;
+    color: $text-muted;
+    font-size: 1.4rem;
+  }
+
+  .title {
+    font-size: 1.6rem;
+    color: $text-strong;
+    font-weight: 500;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 1rem;
+  }
+
+  .slotBtn {
+    background: transparent;
+    border: 1px solid $border-subtle;
+    border-radius: $border-radius;
+    padding: 1rem 0.5rem;
+    color: $text-body;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1.4rem;
+
+    &:hover:not(.unavailable):not(.selected) {
+      border-color: $border-gold-dim;
+      color: $color-gold;
+      transform: translateY(-2px);
+    }
+
+    &.unavailable {
+      opacity: 0.3;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    &.selected {
+      background: $color-gold;
+      color: $color-ink-on-gold;
+      border-color: $color-gold;
+      box-shadow: 0 4px 12px rgba(197, 160, 89, 0.3);
+      transform: translateY(-2px);
+    }
+  }
+}

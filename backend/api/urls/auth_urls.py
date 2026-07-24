@@ -3,13 +3,12 @@ from ..views import (
     get_current_user,
     register_barber,
     get_email_from_token,
-    login_user,
     logout_user,
     request_otp,
     verify_otp,
-    request_password_reset,
-    confirm_password_reset,
-    refresh_token
+    refresh_token,
+    firebase_phone_login,
+    firebase_staff_login,
 )
 
 urlpatterns = [
@@ -20,16 +19,15 @@ urlpatterns = [
     # Client phone/OTP authentication
     path('otp/request/', request_otp, name='request_otp'),
     path('otp/verify/', verify_otp, name='verify_otp'),
+    path('firebase/phone/', firebase_phone_login, name='firebase_phone_login'),
+
+    # Staff (admin/barber) Firebase-bridged authentication — never auto-creates accounts
+    path('firebase/staff/', firebase_staff_login, name='firebase_staff_login'),
 
     # Operations for authenticated users
     path('me/', get_current_user, name='get_current_user'),
-    path('login/', login_user, name='login_user'),
     path('logout/', logout_user, name='logout_user'),
-    
-    # Password recovery management
-    path('reset-password/', request_password_reset, name='request_password_reset'),
-    path('reset-password/<uidb64>/<token>/', confirm_password_reset, name='confirm_password_reset' ),
-    
+
     # Session refresh management
     path('refresh-token/', refresh_token, name='refresh_token'),
 ]

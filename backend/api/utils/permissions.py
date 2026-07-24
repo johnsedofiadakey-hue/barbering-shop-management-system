@@ -41,3 +41,16 @@ class IsBarberRole(BasePermission):
             and request.user.is_authenticated
             and request.user.role == Roles.BARBER.value
         )
+
+
+class IsBarberOrAdminRole(BasePermission):
+    """Allows access to staff who legitimately need client identity details."""
+
+    def has_permission(self, request, view):
+        from ..models import Roles
+
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.role in (Roles.BARBER.value, Roles.ADMIN.value)
+        )

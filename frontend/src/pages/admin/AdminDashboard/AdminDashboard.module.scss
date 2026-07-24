@@ -13,6 +13,16 @@
 
     font-size: 2rem;
     font-weight: 800;
-    color: $color-primary;
+    font-family: $font-heading;
+    font-variant-numeric: tabular-nums;
+    color: $text-strong;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .admin-dashboard {
+    padding: 1.4rem;
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
   }
 }

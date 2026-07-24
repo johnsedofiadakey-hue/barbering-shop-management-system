@@ -1,15 +1,5 @@
-from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-
-class PasswordValidationMixin:
-    """
-    Utility mixin to handle common password validation checks
-    """
-    def validate_password(self, value):
-        validate_password(value)
-        return value
-    
 
 class EmailValidationMixin:
     """
@@ -213,28 +203,62 @@ class AppointmentValidationMixin:
         barber = attrs['barber']
         services = attrs['services']
 
+        if not services:
+            raise serializers.ValidationError('Select at least one service.')
+
         for service in services:
             if service.barber_id != barber.id:
                 raise serializers.ValidationError(f'Service with ID "{service.id}" for the barber "{barber}" does not exist.')
-            
+
+        attrs['duration_minutes'] = sum(service.duration_minutes for service in services)
         return attrs
 
-    def validate_appointment_date_and_slot(self, attrs):
-        from ..models import Appointment, Availability, AppointmentStatus
+    def validate_appointment_date_and_slot(self, attrs, appointment_instance=None):
+        from datetime import datetime, timedelta
+
+        from django.utils import timezone
+
+        from ..models import Appointment, Availability, AppointmentStatus, ShopSettings
 
         client = attrs['client']
         barber = attrs['barber']
         appointment_date = attrs['date']
         appointment_slot = attrs['slot']
+        duration_minutes = attrs.get('duration_minutes', 30)
+        shop = ShopSettings.load()
 
-        if Appointment.objects.filter(client=client, status=AppointmentStatus.ONGOING.value).exists():
-            raise serializers.ValidationError(f'Client: "{client}" already has an ONGOING appointment.')
+        now = timezone.localtime(timezone.now())
+        requested_start = timezone.make_aware(
+            datetime.combine(appointment_date, appointment_slot),
+            timezone.get_current_timezone(),
+        )
+        requested_end = requested_start + timedelta(minutes=duration_minutes)
 
-        if Appointment.objects.filter(client=client, date=appointment_date).exclude(status=AppointmentStatus.CANCELLED.value).exists():
+        if requested_start <= now:
+            raise serializers.ValidationError('Appointments must be booked for a future time.')
+
+        if appointment_date > now.date() + timedelta(days=shop.booking_horizon_days):
+            raise serializers.ValidationError(
+                f'Appointments can only be booked up to {shop.booking_horizon_days} days ahead.'
+            )
+
+        client_appointments = Appointment.objects.filter(client=client, date=appointment_date).exclude(
+            status__in=[AppointmentStatus.CANCELLED.value, AppointmentStatus.NO_SHOW.value]
+        )
+        barber_appointments = Appointment.objects.filter(barber=barber, date=appointment_date).exclude(
+            status__in=[AppointmentStatus.CANCELLED.value, AppointmentStatus.NO_SHOW.value]
+        )
+
+        if appointment_instance:
+            client_appointments = client_appointments.exclude(pk=appointment_instance.pk)
+            barber_appointments = barber_appointments.exclude(pk=appointment_instance.pk)
+
+        if client_appointments.exists():
             raise serializers.ValidationError(f'Appointment for the date "{appointment_date}" for the client: "{client}" already exists.')
 
-        if Appointment.objects.filter(barber=barber, date=appointment_date, slot=appointment_slot).exclude(status=AppointmentStatus.CANCELLED.value).exists():
-            raise serializers.ValidationError(f'Appointment for the date: "{appointment_date}" in the slot: "{appointment_slot}" for the barber: "{barber}" already exists.')
+        for existing in barber_appointments:
+            if requested_start < existing.end_datetime and requested_end > existing.start_datetime:
+                raise serializers.ValidationError('That time overlaps another appointment for this barber.')
 
         try:
             availability = Availability.objects.get(barber=barber, date=appointment_date)
@@ -246,10 +270,34 @@ class AppointmentValidationMixin:
         if slot_str not in availability.slots:
             raise serializers.ValidationError(f'Barber: "{barber}" is not available at "{slot_str}" on "{appointment_date}".')
 
+        parsed_slots = sorted(
+            datetime.strptime(slot, '%H:%M') for slot in availability.slots
+        )
+        intervals = [
+            int((later - earlier).total_seconds() // 60)
+            for earlier, later in zip(parsed_slots, parsed_slots[1:])
+            if later > earlier
+        ]
+        interval = min(intervals) if intervals else 30
+        available_slots = set(availability.slots)
+        cursor = datetime.combine(appointment_date, appointment_slot)
+        end_cursor = cursor + timedelta(minutes=duration_minutes)
+
+        while cursor < end_cursor:
+            if cursor.strftime('%H:%M') not in available_slots:
+                raise serializers.ValidationError(
+                    'The selected services do not fit in the barber\'s remaining availability.'
+                )
+            cursor += timedelta(minutes=interval)
+
         return attrs
     
     def validate_find_appointment(self, attrs):
-        from ..models import Appointment, AppointmentStatus
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from ..models import Appointment, AppointmentStatus, ShopSettings
 
         client = attrs['client']
         appointment_id = self.context.get('appointment_id')
@@ -261,6 +309,12 @@ class AppointmentValidationMixin:
         
         if appointment.status != AppointmentStatus.ONGOING.value:
             raise serializers.ValidationError('Only ONGOING appointments can be cancelled.')
+
+        notice = timedelta(hours=ShopSettings.load().cancellation_notice_hours)
+        if timezone.localtime(timezone.now()) >= appointment.start_datetime - notice:
+            raise serializers.ValidationError(
+                f'Appointments must be cancelled at least {ShopSettings.load().cancellation_notice_hours} hours in advance.'
+            )
 
         attrs['appointment'] = appointment
         return attrs
@@ -437,6 +491,14 @@ class GetBarbersMixin:
         data = barber.to_dict().copy()
         for field in self._PUBLIC_EXCLUDES:
             data.pop(field, None)
+        data['latest_reviews'] = [
+            {
+                'rating': review['rating'],
+                'comment': review['comment'],
+                'created_at': review['created_at'],
+            }
+            for review in data.get('latest_reviews', [])
+        ]
         return data
     
     def get_barber_private(self, barber):
@@ -475,8 +537,6 @@ class GetClientsMixin:
     """
     Mixin for retrieving and serializing Client models.
     """
-    _PUBLIC_EXCLUDES = ['email', 'phone_number', 'is_active', 'total_appointments', 'completed_appointments', 'next_appointment', 'total_spent']
-
     def get_clients_queryset(self, show_all=False):
         """
         Returns Client queryset in the system.
@@ -487,12 +547,15 @@ class GetClientsMixin:
     
     def get_client_public(self, client):
         """
-        Returns only the public data for a single client.
+        Returns the minimal identity card needed by authorized staff views.
         """
-        data = client.to_dict().copy()
-        for field in self._PUBLIC_EXCLUDES:
-            data.pop(field, None)
-        return data
+        return {
+            'id': client.id,
+            'username': client.username,
+            'name': client.name,
+            'surname': client.surname,
+            'profile_image': client.profile_image.url if client.profile_image else None,
+        }
     
     def get_client_private(self, client):
         """
@@ -523,23 +586,34 @@ class GetAvailabilitiesMixin:
         If show_all is True, returns all availabilities.
         """
         from ..models import Availability
-        import datetime
-        return Availability.objects.filter(barber_id=barber_id, date__gte=datetime.date.today()) if not show_all else Availability.objects.all()
+        from django.utils import timezone
+        return Availability.objects.filter(barber_id=barber_id, date__gte=timezone.localdate()) if not show_all else Availability.objects.all()
 
     def _remove_booked_slots(self, barber, date, slots):
         """
         Given a barber, date, and a list of slots, return list of slots which are not already booked.
         """
+        from datetime import datetime
+
+        from django.utils import timezone
+
         from ..models import Appointment, AppointmentStatus
 
-        # Get all non-cancelled appointments for this barber/date, get their slots
-        booked_slots = set(Appointment.objects.filter(barber=barber, date=date,).exclude(status=AppointmentStatus.CANCELLED.value).values_list('slot', flat=True))
+        appointments = Appointment.objects.filter(barber=barber, date=date).exclude(
+            status__in=[AppointmentStatus.CANCELLED.value, AppointmentStatus.NO_SHOW.value]
+        )
 
-        # Convert booked_slots to string format for comparison (slot is a time object, slots are strings: "HH:MM")
-        booked_slots_str = {s.strftime("%H:%M") for s in booked_slots}
+        result = []
+        for slot in slots:
+            slot_time = datetime.strptime(slot, '%H:%M').time()
+            candidate = timezone.make_aware(
+                datetime.combine(date, slot_time),
+                timezone.get_current_timezone(),
+            )
+            if not any(appointment.start_datetime <= candidate < appointment.end_datetime for appointment in appointments):
+                result.append(slot)
 
-        # Only keep slots that are not in the booked slots
-        return [slot for slot in slots if slot not in booked_slots_str]
+        return result
     
     def _filter_slots(self, availability):
         """
@@ -547,10 +621,10 @@ class GetAvailabilitiesMixin:
         - slots that are in the past (if today)
         - slots that are already booked (non-cancelled appointment)
         """
-        import datetime
+        from django.utils import timezone
 
-        today = datetime.date.today()
-        now = datetime.datetime.now().time()
+        today = timezone.localdate()
+        now = timezone.localtime(timezone.now()).time()
 
         slots = availability.slots
         
@@ -562,6 +636,34 @@ class GetAvailabilitiesMixin:
         slots = self._remove_booked_slots(availability.barber, availability.date, slots)
 
         return slots
+
+    def _filter_slots_for_duration(self, availability, slots, duration_minutes):
+        """Only return starts with enough consecutive free availability for the selected services."""
+        from datetime import datetime, timedelta
+
+        parsed_slots = sorted(datetime.strptime(slot, '%H:%M') for slot in availability.slots)
+        intervals = [
+            int((later - earlier).total_seconds() // 60)
+            for earlier, later in zip(parsed_slots, parsed_slots[1:])
+            if later > earlier
+        ]
+        interval = min(intervals) if intervals else 30
+        available = set(slots)
+        fitting_slots = []
+
+        for slot in slots:
+            cursor = datetime.combine(availability.date, datetime.strptime(slot, '%H:%M').time())
+            end = cursor + timedelta(minutes=duration_minutes)
+            fits = True
+            while cursor < end:
+                if cursor.strftime('%H:%M') not in available:
+                    fits = False
+                    break
+                cursor += timedelta(minutes=interval)
+            if fits:
+                fitting_slots.append(slot)
+
+        return fitting_slots
 
     def _slot_str_is_future(self, slot_str, now_time):
         """

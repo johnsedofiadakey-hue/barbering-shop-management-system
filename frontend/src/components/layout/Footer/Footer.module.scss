@@ -3,9 +3,9 @@
 .footer-area {
   flex-shrink: 0; // Prevent sidebar from changing height
 
-  height: 6rem;
-  border-top: 1px solid $border;
-  background: $color-primary;
+  height: 5.4rem;
+  border-top: 1px solid $border-hair;
+  background: $color-footer-bg;
 
   display: flex;
   flex-direction: column;
@@ -19,19 +19,71 @@
     align-items: center;
     justify-content: space-between;
 
-    .links {
-      list-style-type: none;
-      display: flex;
-      gap: 1.5rem;
+    .promise {
+      color: $color-gold;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
 
-      .button {
-        padding: 1rem;
-      }
+    .footer-end {
+      display: flex;
+      align-items: center;
+      gap: 1.3rem;
     }
 
     .copyright {
-      font-size: 1.3rem;
-      color: $color-muted;
+      font-size: 1.2rem;
+      color: $text-faint;
+    }
+
+    .staff-access {
+      color: rgba(255, 255, 255, 0.38);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.2s ease;
+
+      &:hover,
+      &:focus-visible {
+        color: $color-gold;
+      }
+    }
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .footer-area {
+    min-height: 4.8rem;
+    height: auto;
+    padding-block: 1rem;
+
+    &.authenticated {
+      display: none;
+    }
+
+    .footer {
+      padding-inline: 1.4rem;
+      gap: 1rem;
+
+      > :first-child,
+      .promise,
+      .copyright {
+        display: none;
+      }
+
+      .footer-end {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .staff-access {
+        color: rgba(255, 255, 255, 0.28);
+        font-size: 0.9rem;
+      }
     }
   }
 }

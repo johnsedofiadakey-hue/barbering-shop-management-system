@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@hooks/useAuth';
+import { useShopSettings } from '@hooks/useShopSettings';
 import styles from './AdminDashboard.module.scss';
 import api from '@api';
 
@@ -9,6 +10,7 @@ import RadialChart from '@components/ui/RadialChart/RadialChart';
 
 function AdminDashboard() {
   const { profile, setProfile } = useAuth();
+  const shop = useShopSettings();
   const [isLoading, setIsLoading] = useState(true);
 
   /**
@@ -39,7 +41,7 @@ function AdminDashboard() {
     <div className={styles.adminDashboard}>
       {/* Revenue */}
       <StatCard icon="revenue" label="Total Revenue">
-        <span className={styles.value}>{`$${profile.total_revenue}`}</span>
+        <span className={styles.value}>{`${shop.currency_symbol} ${profile.total_revenue}`}</span>
       </StatCard>
 
       {/* Total Barbers */}

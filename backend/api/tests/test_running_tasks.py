@@ -202,9 +202,9 @@ class RunningTasksTestCase(TestCase):
         self.assertFalse(appt_cancelled.reminder_email_sent)
 
     @patch("api.tasks.timezone")
-    def test_send_appointment_reminders_handles_completed_and_ongoing(self, mocked_tz, mock_send_mail):
+    def test_send_appointment_reminders_handles_only_ongoing(self, mocked_tz, mock_send_mail):
         """
-        Reminder is sent both to ONGOING and COMPLETED (but not CANCELLED, not already-sent).
+        Reminder is sent only to ONGOING appointments, never completed or cancelled ones.
         """
         fake_now_naive = datetime.datetime.combine(self.today, datetime.time(17, 0))
         fake_now = timezone.make_aware(fake_now_naive)
@@ -218,12 +218,12 @@ class RunningTasksTestCase(TestCase):
         client3 = self._fresh_client("s3")
         appt_cancelled = self.create_appointment(date=self.today, slot=datetime.time(17, 50), status=AppointmentStatus.CANCELLED.value, client=client3)
         send_appointment_reminders()
-        # Called for 2 but not third
+        # Called only for the active appointment.
         appt_ongoing.refresh_from_db()
         appt_completed.refresh_from_db()
         appt_cancelled.refresh_from_db()
         self.assertTrue(appt_ongoing.reminder_email_sent)
-        self.assertTrue(appt_completed.reminder_email_sent)
+        self.assertFalse(appt_completed.reminder_email_sent)
         self.assertFalse(appt_cancelled.reminder_email_sent)
 
     @patch("api.tasks.timezone")

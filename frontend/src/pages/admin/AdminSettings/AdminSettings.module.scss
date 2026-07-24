@@ -14,6 +14,110 @@
     gap: 0.5rem;
   }
 
+  .loading-block {
+    min-height: 12rem;
+    display: grid;
+    place-items: center;
+  }
+
+  .business-form,
+  .portfolio-section {
+    padding: 2rem;
+  }
+
+  .business-form {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .form-intro {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 2rem;
+
+    h2 {
+      color: $text-strong;
+      font-size: 2rem;
+    }
+
+    p {
+      max-width: 62rem;
+      color: $text-muted;
+      font-size: 1.3rem;
+    }
+
+    button,
+    a {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+  }
+
+  .business-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .portfolio-section {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .portfolio-item {
+    min-width: 0;
+    padding: 0.8rem;
+    display: grid;
+    grid-template-columns: 7.2rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid $border-panel;
+    border-radius: $border-radius-lg;
+    background: $color-primary;
+
+    img {
+      width: 7.2rem;
+      height: 7.2rem;
+      object-fit: cover;
+      border-radius: $border-radius;
+    }
+  }
+
+  .portfolio-copy {
+    min-width: 0;
+    display: grid;
+    gap: 0.2rem;
+
+    strong {
+      color: $text-strong;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      color: $text-muted;
+      font-size: 1.2rem;
+    }
+  }
+
+  .empty-state {
+    padding: 2rem;
+    border: 1px dashed $border-panel;
+    border-radius: $border-radius-lg;
+    color: $text-muted;
+    text-align: center;
+  }
+
   .profile-image-section {
     padding: 2rem;
 
@@ -61,7 +165,46 @@
 }
 
 @media (max-width: $bp-small) {
-  .input-group {
-    flex-direction: column;
+  .admin-settings {
+    margin: 1.4rem;
+    gap: 1.4rem;
+
+    .business-form,
+    .portfolio-section,
+    .profile-image-section,
+    .update-profile-section,
+    .delete-profile-section {
+      padding: 1.2rem 0;
+    }
+
+    .form-intro {
+      flex-direction: column;
+
+      button,
+      a {
+        width: 100%;
+      }
+    }
+
+    .business-grid,
+    .portfolio-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .profile-image-section {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      .image-action {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+    }
+
+    .input-group {
+      flex-direction: column;
+    }
   }
 }

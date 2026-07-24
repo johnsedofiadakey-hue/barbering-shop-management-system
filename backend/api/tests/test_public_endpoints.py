@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.models import (
     Barber,
@@ -113,6 +114,14 @@ class PublicEndpointsTest(APITestCase):
             barber = barber.copy()
             for field in ['email', 'completed_appointments',  'upcoming_appointments', 'availabilities', 'is_active', 'total_revenue']:
                 barber.pop(field, None)
+            barber['latest_reviews'] = [
+                {
+                    'rating': review['rating'],
+                    'comment': review['comment'],
+                    'created_at': review['created_at'],
+                }
+                for review in barber.get('latest_reviews', [])
+            ]
             return barber
     
 
@@ -135,6 +144,8 @@ class PublicEndpointsTest(APITestCase):
         self.assertIn(self.barber_to_private(self.barber1.to_dict()), barbers)
         self.assertIn(self.barber_to_private(self.barber2.to_dict()), barbers)
         self.assertNotIn(self.barber_to_private(self.barber_inactive.to_dict()), barbers)
+        reviewed_barber = next(barber for barber in barbers if barber['id'] == self.barber1.id)
+        self.assertNotIn('client_id', reviewed_barber['latest_reviews'][0])
 
 
     def test_get_barber_profile_public_success(self):
@@ -148,15 +159,29 @@ class PublicEndpointsTest(APITestCase):
         self.assertEqual(profile, self.barber_to_private(self.barber1.to_dict()))
     
 
-    def test_get_client_profile_public_success(self):
+    def test_get_client_profile_requires_staff_authentication(self):
         """
-        Can get public profile for a client.
+        Client identity cards are not available to anonymous users.
         """
         response = self.client.get(self.barber_client_user_profile_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        token = str(RefreshToken.for_user(self.barber1).access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        response = self.client.get(self.barber_client_user_profile_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         profile = response.data["profile"]
-        self.assertEqual(profile, self.client_to_private(self.client_user.to_dict()))
+        self.assertEqual(
+            profile,
+            {
+                "id": self.client_user.id,
+                "username": self.client_user.username,
+                "name": self.client_user.name,
+                "surname": self.client_user.surname,
+                "profile_image": None,
+            },
+        )
 
 
     def test_get_barber_profile_not_found(self):
@@ -186,6 +211,19 @@ class PublicEndpointsTest(APITestCase):
         availabilities = response.data["availabilities"]
         for availabililty in [self.availability1, self.availability2]:
             self.assertIn(availabililty.to_dict(), availabilities)
+
+
+    def test_slot_results_fit_selected_service_duration(self):
+        self.service1.duration_minutes = 90
+        self.service1.save(update_fields=['duration_minutes'])
+        response = self.client.post(
+            reverse('get_barber_slots_public', kwargs={'barber_id': self.barber1.id}),
+            {'date': self.availability1.date, 'services': [self.service1.id]},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['slots'], ['09:00'])
 
 
     def test_get_barber_availabilities_not_found(self):

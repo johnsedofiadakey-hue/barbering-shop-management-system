@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ['SECRET_KEY']
 
 # Allowed host ips
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split()
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').replace(',', ' ').split()
 
 # Defined installed apps in use
 INSTALLED_APPS = [
@@ -59,6 +59,10 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
+# Phone-authenticated clients opt into a persistent device session. Staff tokens
+# intentionally keep the shorter global lifetime above.
+CLIENT_REFRESH_TOKEN_DAYS = int(os.getenv('CLIENT_REFRESH_TOKEN_DAYS', '3650'))
+
 # Setting up django's hooks
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -98,7 +102,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'HOST': os.environ['POSTGRES_HOST'],
-        'PORT': os.environ['POSTGRES_PORT'],
+        'PORT': os.getenv('POSTGRES_PORT', ''),
         'NAME': os.environ['POSTGRES_DB'],
         'USER': os.environ['POSTGRES_USER'],
         'PASSWORD': os.environ['POSTGRES_PASSWORD'],
@@ -115,7 +119,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = "Europe/Rome"
+TIME_ZONE = os.getenv('APP_TIME_ZONE', 'Africa/Accra')
 USE_I18N = True
 USE_TZ = True
 
@@ -130,12 +134,13 @@ MEDIA_ROOT = '/app/media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Django's email service settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_USE_TLS = True
-EMAIL_PORT = os.environ['EMAIL_PORT']
-EMAIL_HOST = os.environ['EMAIL_HOST']
-EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
-EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() == 'true'
+EMAIL_PORT = os.getenv('EMAIL_PORT', '587')
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'BarberManager <noreply@localhost>')
 
 # SMS / messaging service settings (Twilio; MESSAGE_CHANNEL 'sms' or 'whatsapp')
 SMS_BACKEND = os.getenv('SMS_BACKEND', 'twilio')  # 'twilio' or 'console' (dev/tests)
@@ -144,20 +149,26 @@ TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '')
 TWILIO_FROM_NUMBER = os.getenv('TWILIO_FROM_NUMBER', '')
 
+# Firebase Phone Authentication (production client login)
+FIREBASE_AUTH_ENABLED = os.getenv('FIREBASE_AUTH_ENABLED', 'false').lower() == 'true'
+FIREBASE_PROJECT_ID = os.getenv('FIREBASE_PROJECT_ID', '')
+
 # OTP login settings
 OTP_EXPIRY_MINUTES = 5
 OTP_MAX_PER_DAY = 5
 OTP_REQUEST_COOLDOWN_SECONDS = 60
 
 # Celery tasks settings
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', CELERY_BROKER_URL)
+CELERY_TASK_ALWAYS_EAGER = os.getenv('CELERY_TASK_ALWAYS_EAGER', 'false').lower() == 'true'
+CELERY_TASK_EAGER_PROPAGATES = CELERY_TASK_ALWAYS_EAGER
 CELERY_WORKER_STATE_DB = '/tmp/celeryworker.state'
 CELERY_BEAT_SCHEDULE_FILENAME = '/tmp/celerybeat.schedule'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = "Europe/Rome"
+CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
     'complete-ongoing-appointments': {
         'task': 'api.tasks.complete_ongoing_appointments',

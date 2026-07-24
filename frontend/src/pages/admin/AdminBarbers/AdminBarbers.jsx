@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@hooks/useAuth';
+import { useShopSettings } from '@hooks/useShopSettings';
 import styles from './AdminBarbers.module.scss';
 import api from '@api';
 
@@ -15,12 +16,14 @@ import Spinner from '@components/common/Spinner/Spinner';
 
 function AdminBarbers() {
   const { profile } = useAuth();
+  const shop = useShopSettings();
   const [barbers, setBarbers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Popup states
   const [deletePopup, setDeletePopup] = useState({ open: false, barber: null });
   const [invitePopup, setInvitePopup] = useState(false);
+  const [editPopup, setEditPopup] = useState({ open: false, barber: null });
 
   /**
    * Defines fetching barbers from api (single responsibility, outside effect)
@@ -52,6 +55,8 @@ function AdminBarbers() {
   // Delete popup state handlers
   const openDeletePopup = (barber) => setDeletePopup({ open: true, barber });
   const closeDeletePopup = () => setDeletePopup({ open: false, barber: null });
+  const openEditPopup = (barber) => setEditPopup({ open: true, barber });
+  const closeEditPopup = () => setEditPopup({ open: false, barber: null });
 
   /**
    * Handles inviting a new barber
@@ -68,6 +73,15 @@ function AdminBarbers() {
   const handleDeleteBarber = async (barberId) => {
     await api.admin.deleteBarber(barberId);
     closeDeletePopup();
+    await fetchBarbers();
+  };
+
+  const handleUpdateBarber = async (fields) => {
+    await api.admin.updateBarber(editPopup.barber.id, {
+      ...fields,
+      is_active: fields.is_active === true || fields.is_active === 'true',
+    });
+    closeEditPopup();
     await fetchBarbers();
   };
 
@@ -111,7 +125,7 @@ function AdminBarbers() {
             <Button
               className={styles.actionBtn}
               type="button"
-              color="primary"
+              color="gold"
               size="md"
               onClick={openInvitePopup} //
             >
@@ -124,49 +138,49 @@ function AdminBarbers() {
         {/* Table Headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="user" size="ty" black />
+            <Icon name="user" size="ty" />
             <span className={styles.tableTitleName}>User</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="email_base" size="ty" black />
+            <Icon name="email_base" size="ty" />
             <span className={styles.tableTitleName}>Email</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="review" size="ty" black />
+            <Icon name="review" size="ty" />
             <span className={styles.tableTitleName}>Rating</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="revenue" size="ty" black />
+            <Icon name="revenue" size="ty" />
             <span className={styles.tableTitleName}>Revenue</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="spinner" size="ty" black />
-            <span className={styles.tableTitleName}>Status</span>
-          </div>
-        </Pagination.Column>
-
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="check" size="ty" black />
+            <Icon name="check" size="ty" />
             <span className={styles.tableTitleName}>Joined</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="dial" size="ty" black />
+            <Icon name="spinner" size="ty" />
+            <span className={styles.tableTitleName}>Status</span>
+          </div>
+        </Pagination.Column>
+
+        <Pagination.Column>
+          <div className={styles.tableTitle}>
+            <Icon name="dial" size="ty" />
             <span className={styles.tableTitleName}>Actions</span>
           </div>
         </Pagination.Column>
@@ -189,7 +203,9 @@ function AdminBarbers() {
             </Pagination.Cell>
 
             <Pagination.Cell>
-              <span className={styles.revenue}>${barber.total_revenue}</span>
+              <span className={styles.revenue}>
+                {shop.currency_symbol} {barber.total_revenue}
+              </span>
             </Pagination.Cell>
 
             <Pagination.Cell>
@@ -207,20 +223,29 @@ function AdminBarbers() {
                 <Button
                   type="button"
                   size="sm"
-                  color="animated"
+                  color="actionbtn"
+                  onClick={() => openEditPopup(barber)}
+                  aria-label={`Edit ${barber.name || barber.email}`}
+                >
+                  <Icon name="pen" size="sm" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  color="actionbtn"
                   disabled={!barber.is_active}
                   href={`/admin/availabilities/barber/${barber.id}`} //
                 >
-                  <Icon name="availability" size="sm" black />
+                  <Icon name="availability" size="sm" />
                 </Button>
 
                 <Button
                   type="button"
                   size="sm"
-                  color="animated"
+                  color="actionbtn"
                   onClick={() => openDeletePopup(barber)} //
                 >
-                  <Icon name="trash" size="sm" black />
+                  <Icon name="trash" size="sm" />
                 </Button>
               </div>
             </Pagination.Cell>
@@ -247,6 +272,46 @@ function AdminBarbers() {
           placeholder="barber@email.com"
           size="md" //
         />
+      </Modal>
+
+      <Modal
+        open={editPopup.open}
+        fields={
+          editPopup.barber
+            ? {
+                name: editPopup.barber.name || '',
+                surname: editPopup.barber.surname || '',
+                email: editPopup.barber.email || '',
+                description: editPopup.barber.description || '',
+                is_active: String(editPopup.barber.is_active),
+                profile_image: null,
+              }
+            : {}
+        }
+        action={{ submit: 'Save barber', loading: 'Saving...' }}
+        onSubmit={handleUpdateBarber}
+        onClose={closeEditPopup}
+      >
+        <Modal.Title icon="barber">Barber profile</Modal.Title>
+        <Modal.Description>
+          Update the public name, specialist details, status, and photo clients see while booking.
+        </Modal.Description>
+        <Input label="First name" type="text" name="name" required maxLength={50} size="md" />
+        <Input label="Last name" type="text" name="surname" required maxLength={50} size="md" />
+        <Input label="Email" type="email" name="email" required size="md" />
+        <Input label="Specialist description" type="text" name="description" maxLength={500} size="md" />
+        <Input
+          label="Status"
+          type="dropdown"
+          name="is_active"
+          size="md"
+          required
+          fetcher={async () => [
+            { key: 'true', value: 'Active and bookable' },
+            { key: 'false', value: 'Hidden from booking' },
+          ]}
+        />
+        <Input label="Barber photo" type="file" name="profile_image" accept="image/*" placeholder="Choose barber photo" />
       </Modal>
 
       {/* Delete Barber Modal */}

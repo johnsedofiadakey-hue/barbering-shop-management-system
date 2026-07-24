@@ -59,7 +59,7 @@
   }
 
   .availability-date {
-    color: $color-primary;
+    color: $text-strong;
     font-size: 1.3rem;
     font-weight: 600;
   }
@@ -68,7 +68,7 @@
     display: flex;
 
     .slots {
-      color: $color-primary;
+      color: $text-strong;
       font-size: 1.3rem;
       font-weight: 600;
 
@@ -85,7 +85,7 @@
 
   .error {
     padding-block: 2rem;
-    color: $color-primary;
+    color: $text-strong;
 
     display: flex;
     flex-direction: column;
@@ -102,6 +102,35 @@
     .message {
       font-size: 1.5rem;
       margin-bottom: 1rem;
+    }
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .admin-availabilities {
+    margin: 1.4rem;
+    gap: 1.4rem;
+
+    .profile-section {
+      padding: 1rem 0;
+      gap: 1.5rem;
+    }
+
+    .action {
+      flex-direction: column-reverse;
+      gap: 0.8rem;
+
+      > * {
+        width: 100%;
+      }
+    }
+
+    .availability-slots .slots {
+      white-space: normal;
+    }
+
+    .actions {
+      justify-content: flex-end;
     }
   }
 }

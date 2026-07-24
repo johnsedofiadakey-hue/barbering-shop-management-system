@@ -6,9 +6,15 @@ from ..views import (
     get_barber_services_public,
     get_barber_profile_public,
     get_client_profile_public,
+    get_shop_settings,
+    get_portfolio,
+    get_before_after,
 )
 
 urlpatterns = [
+    path('shop/', get_shop_settings, name='get_shop_settings'),
+    path('portfolio/', get_portfolio, name='get_portfolio'),
+    path('before-after/', get_before_after, name='get_before_after'),
     # Barber getters
     path('barbers/', get_barbers_public, name='get_barbers_list'),
     path('barbers/<int:barber_id>/profile/', get_barber_profile_public, name='get_barber_profile_public'),

@@ -10,7 +10,7 @@ function StatCard({ icon, label, children, className = '' }) {
   return (
     <Card className={computedClassName}>
       <div className={styles.icon}>
-        <Icon name={icon} size="sm" black />
+        <Icon name={icon} size="sm" />
       </div>
 
       <div className={styles.content}>

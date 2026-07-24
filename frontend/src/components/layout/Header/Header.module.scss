@@ -3,8 +3,8 @@
 .header-area {
   flex-shrink: 0; // Prevent header from changing height
 
-  height: 6rem;
-  border-bottom: 1px solid $border;
+  height: 6.6rem;
+  border-bottom: 1px solid $border-hair;
   background: $color-primary;
 
   display: flex;
@@ -19,10 +19,86 @@
     align-items: center;
     justify-content: space-between;
 
+    .public-nav {
+      display: flex;
+      align-items: center;
+      gap: clamp(1.5rem, 2.4vw, 3.2rem);
+
+      a {
+        color: $text-muted;
+        font-size: 1.2rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-decoration: none;
+        transition: color 0.2s ease;
+
+        &:hover,
+        &:focus-visible {
+          color: $color-gold;
+        }
+      }
+    }
+
     .actions {
       display: flex;
       align-items: center;
       gap: 1.5rem;
     }
+
+    .profile-btn {
+      width: 4.2rem;
+      height: 4.2rem;
+      padding: 0;
+      border-radius: 50%;
+    }
+  }
+}
+
+@media (max-width: $bp-medium) {
+  .header-area .header .public-nav {
+    display: none;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .header-area {
+    height: 6rem;
+
+    .header {
+      padding-inline: 1.4rem;
+
+      .actions {
+        gap: 0.6rem;
+      }
+    }
+
+    &.authenticated {
+      position: relative;
+      z-index: 40;
+      height: 5.8rem;
+      border-bottom-color: rgba(197, 160, 89, 0.14);
+      box-shadow: 0 0.8rem 2.8rem rgba(0, 0, 0, 0.18);
+
+      .header {
+        padding-inline: 1.2rem;
+      }
+
+      .logout-btn {
+        display: none;
+      }
+
+      .profile-btn {
+        width: 4rem;
+        height: 4rem;
+        border: 1px solid $border-gold-dim;
+        background: rgba(197, 160, 89, 0.08);
+      }
+    }
+  }
+}
+
+@media (max-width: 22.5em) {
+  .header-area .header {
+    padding-inline: 1rem;
   }
 }

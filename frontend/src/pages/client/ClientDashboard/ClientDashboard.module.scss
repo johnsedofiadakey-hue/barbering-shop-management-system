@@ -1,138 +1,430 @@
 @use '@styles/variables.module.scss' as *;
 
-.client-dashboard {
-  padding: 5rem;
-
+.dashboard {
+  width: min(112rem, 100%);
+  margin-inline: auto;
+  padding: clamp(2rem, 4vw, 5rem);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-gap: 5rem;
+  grid-template-columns: minmax(0, 1.25fr) minmax(30rem, 0.75fr);
+  gap: 1.6rem;
+}
 
-  :nth-child(4),
-  :nth-child(5) {
-    grid-column: span 3;
+.welcome-card,
+.next-card,
+.history-section,
+.review-section,
+.review-prompt {
+  border: 1px solid $border-panel;
+  border-radius: 2rem;
+  background: $color-primary;
+  box-shadow: 0 1.6rem 4rem rgba(0, 0, 0, 0.16);
+}
+
+.welcome-card {
+  min-height: 24rem;
+  padding: clamp(2rem, 4vw, 4rem);
+  background: radial-gradient(circle at 90% 10%, rgba(197, 160, 89, 0.18), transparent 30rem),
+    linear-gradient(135deg, #171512, #0d0c0b);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.welcome-copy {
+  h1 {
+    max-width: 58rem;
+    color: $text-strong;
+    font-size: clamp(3rem, 6vw, 5.6rem);
+    line-height: 1;
   }
 
-  .value {
-    display: block;
+  > p {
+    max-width: 48rem;
     margin-top: 1rem;
+    color: $text-muted;
+    font-size: 1.3rem;
+  }
+}
 
+.eyebrow {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: $color-gold;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.session-note {
+  margin-top: 1.4rem;
+  color: #9f988b;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.primary-cta {
+  flex: 0 0 auto;
+  min-height: 5rem;
+  padding-inline: 2rem;
+  gap: 0.75rem;
+  border-radius: 1.4rem;
+}
+
+.next-card {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+
+  &.has-appointment {
+    background: linear-gradient(145deg, rgba(197, 160, 89, 0.1), transparent 50%), $color-primary;
+  }
+}
+
+.section-label,
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.section-label {
+  color: $text-muted;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.status {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(197, 160, 89, 0.12);
+  color: $color-gold;
+  font-size: 0.85rem;
+}
+
+.next-main {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+.date-badge,
+.history-date {
+  flex: 0 0 auto;
+  border: 1px solid $border-gold-dim;
+  border-radius: 1.4rem;
+  background: rgba(197, 160, 89, 0.08);
+  display: grid;
+  place-items: center;
+
+  strong {
+    color: $text-strong;
+    font-family: $font-heading;
+    line-height: 1;
+  }
+
+  span {
+    color: $color-gold;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+}
+
+.date-badge {
+  width: 7.2rem;
+  height: 7.2rem;
+
+  strong {
+    font-size: 2.8rem;
+  }
+
+  span {
+    font-size: 0.9rem;
+  }
+}
+
+.next-details {
+  min-width: 0;
+
+  h2 {
+    color: $text-strong;
+    font-size: 1.75rem;
+    line-height: 1.15;
+  }
+
+  > p {
+    margin-top: 0.4rem;
+    color: $text-muted;
+    font-size: 1.12rem;
+  }
+}
+
+.barber-mini {
+  margin-top: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+
+  span {
+    color: $text-body;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+}
+
+.empty-next {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1rem;
+  text-align: center;
+
+  .empty-icon {
+    width: 5.6rem;
+    height: 5.6rem;
+    border-radius: 1.8rem;
+    background: $color-icon-chip-bg;
+    color: $color-gold;
+    display: grid;
+    place-items: center;
+  }
+
+  h2 {
+    color: $text-strong;
+    font-size: 1.7rem;
+  }
+
+  p {
+    color: $text-muted;
+    font-size: 1.08rem;
+  }
+}
+
+.quick-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+
+  > * {
+    width: 100%;
+    min-height: 7.6rem;
+    padding: 1rem 1.2rem;
+    justify-content: flex-start;
+    gap: 1rem;
+    border-radius: 1.5rem;
+    text-align: left;
+  }
+
+  .action-icon {
+    flex: 0 0 auto;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1.3rem;
+    background: $color-icon-chip-bg;
+    color: $color-gold;
+    display: grid;
+    place-items: center;
+  }
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: $text-strong;
+    font-size: 1.12rem;
+  }
+
+  small {
+    margin-top: 0.15rem;
+    color: $text-dim;
+    font-size: 0.95rem;
+  }
+}
+
+.history-section,
+.review-section {
+  grid-column: 1 / -1;
+  padding: 2rem;
+}
+
+.review-prompt {
+  grid-column: 1 / -1;
+  padding: 1.8rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+
+  h2 {
+    color: $text-strong;
+    font-size: 1.5rem;
+  }
+
+  p {
+    margin-top: 0.3rem;
+    color: $text-muted;
+    font-size: 1.05rem;
+  }
+}
+
+.section-heading {
+  margin-bottom: 1.4rem;
+
+  h2 {
+    color: $text-strong;
     font-size: 2rem;
-    font-weight: 800;
-    color: $color-primary;
+  }
+}
+
+.history-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.history-item {
+  padding: 1rem 1.2rem;
+  border: 1px solid $border-hair;
+  border-radius: 1.4rem;
+  background: rgba(0, 0, 0, 0.12);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.history-date {
+  width: 4.6rem;
+  height: 4.6rem;
+
+  strong {
+    font-size: 1.7rem;
   }
 
-  .empty {
+  span {
+    font-size: 0.72rem;
+  }
+}
+
+.history-details {
+  min-width: 0;
+
+  strong,
+  span {
     display: block;
-    margin-top: 1rem;
-    font-style: italic;
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: $color-muted;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .action {
-    padding-block: 1rem;
+  strong {
+    color: $text-strong;
+    font-size: 1.12rem;
   }
 
-  .table-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  span {
+    margin-top: 0.2rem;
+    color: $text-muted;
+    font-size: 0.98rem;
+  }
+}
 
-    .table-title-name {
-      display: block;
-      height: 1.7rem;
-      font-weight: 600;
+.history-price {
+  color: $color-gold;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.empty-list {
+  padding: 2.5rem 1rem;
+  border: 1px dashed $border-subtle;
+  border-radius: 1.4rem;
+  color: $text-muted;
+  text-align: center;
+}
+
+.review-card {
+  padding: 1.5rem;
+  border: 1px solid $border-hair;
+  border-radius: 1.4rem;
+  background: rgba(0, 0, 0, 0.12);
+
+  p {
+    margin-top: 0.8rem;
+    color: $text-body;
+    font-size: 1.16rem;
+  }
+
+  > span {
+    display: block;
+    margin-top: 0.6rem;
+    color: $text-dim;
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .dashboard {
+    padding: 1.2rem 1.2rem 2.4rem;
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+
+  .welcome-card {
+    min-height: 24rem;
+    padding: 2rem 1.6rem;
+    border-radius: 1.8rem;
+    align-items: stretch;
+    flex-direction: column;
+
+    .welcome-copy h1 {
+      font-size: 3.5rem;
+    }
+
+    .primary-cta {
+      width: 100%;
     }
   }
 
-  .upcoming-appointment-value {
-    margin-top: 1rem;
+  .next-card {
+    min-height: 23rem;
+    padding: 1.5rem;
+    border-radius: 1.8rem;
+  }
 
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+  .quick-actions {
+    grid-template-columns: 1fr;
     gap: 0.8rem;
 
-    .upcoming-appointment-date {
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: $color-primary;
-    }
-
-    .upcoming-appointment-slot {
-      font-size: 2rem;
-      font-weight: 600;
-      color: $color-primary;
+    > * {
+      min-height: 6.6rem;
     }
   }
 
-  .date-container {
-    display: flex;
-    flex-direction: start;
-
-    .date {
-      width: 6.5rem;
-
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      .date {
-        font-size: 1.15rem;
-        font-weight: 600;
-      }
-
-      .slot {
-        color: $color-primary;
-        font-size: 1.05rem;
-        font-weight: 500;
-      }
-    }
+  .history-section,
+  .review-section {
+    padding: 1.5rem;
+    border-radius: 1.8rem;
   }
 
-  .amount-spent {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    .amount {
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
+  .history-item {
+    padding: 0.9rem;
+    gap: 0.9rem;
   }
 
-  .services {
-    font-size: 1.08rem;
-    font-weight: 600;
-
-    .no-services {
-      color: $color-primary;
-      font-style: italic;
-      font-weight: 500;
-    }
-  }
-
-  .review-comment {
-    display: flex;
-
-    .comment {
-      color: $color-lighter;
-      font-size: 1.2rem;
-
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-
-  .review-date {
-    display: flex;
-
-    .date {
-      color: $color-primary;
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
+  .history-price {
+    font-size: 1.05rem;
   }
 }

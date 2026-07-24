@@ -6,6 +6,17 @@ import Icon from '@components/common/Icon/Icon';
 import Button from '@components/common/Button/Button';
 import Spinner from '@components/common/Spinner/Spinner';
 
+const getTextContent = (node) =>
+  Children.toArray(node)
+    .map((child) => {
+      if (typeof child === 'string' || typeof child === 'number') return String(child);
+      if (child?.props?.children) return getTextContent(child.props.children);
+      return '';
+    })
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 function Pagination({
   icon,
   label,
@@ -70,7 +81,11 @@ function Pagination({
                 return (
                   <tr key={row.key || ridx}>
                     {cells.map((cell, cidx) => (
-                      <td className={styles.tableBodyRow} key={cidx}>
+                      <td
+                        className={styles.tableBodyRow}
+                        data-label={getTextContent(columns[cidx]?.props.children) || `Item ${cidx + 1}`}
+                        key={cidx}
+                      >
                         {cell.props.children}
                       </td>
                     ))}
@@ -96,24 +111,24 @@ function Pagination({
             className={styles.pageButton}
             type="button"
             onClick={() => setPage(page - 1)}
-            color="animated"
+            color="actionbtn"
             size="sm"
             disabled={page === 0}
           >
-            <Icon name="left" size="sm" black />
+            <Icon name="left" size="sm" />
           </Button>
           <span className={styles.pageStatus}>
-            Page {page + 1} / {pageCount}
+            Page <span className={styles.pageCurrent}>{page + 1}</span> / {pageCount}
           </span>
           <Button
             className={styles.pageButton}
             type="button"
             onClick={() => setPage(page + 1)}
-            color="animated"
+            color="actionbtn"
             size="sm"
             disabled={page + 1 >= pageCount}
           >
-            <Icon name="right" size="sm" black />
+            <Icon name="right" size="sm" />
           </Button>
         </nav>
       )}

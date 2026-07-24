@@ -1,25 +1,17 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes, authentication_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework import status
-from ..utils import(
-    send_password_reset_email,
-)
 from ..serializers import (
     GetCurrentUserSerializer,
     GetEmailFromTokenSerializer,
-    LoginSerializer,
     RegisterBarberSerializer,
     LogoutSerializer,
-    RequestPasswordResetSerializer,
-    ConfirmPasswordResetSerializer,
     RefreshTokenCustomSerializer,
+    FirebasePhoneLoginSerializer,
+    FirebaseStaffLoginSerializer,
 )
 
 
@@ -48,15 +40,15 @@ def get_current_user(request):
         201: OpenApiResponse(description="Barber registered and account activated."),
         400: OpenApiResponse(description="Validation error or expired/invalid invite link."),
     },
-    description="Barber completes registration via invite link by setting username and password.",
+    description="Barber completes registration via invite link, authenticating with a Firebase-verified identity.",
 )
 @api_view(['POST'])
 @permission_classes([AllowAny])
-@authentication_classes([]) 
-@parser_classes([JSONParser]) 
-def register_barber(request, uidb64, token): 
+@authentication_classes([])
+@parser_classes([JSONParser])
+def register_barber(request, uidb64, token):
     """
-    Barber completes registration via invite link by setting username and password.
+    Barber completes registration via invite link, authenticating with a Firebase-verified identity.
     """
     serializer = RegisterBarberSerializer(data=request.data, context={'uidb64': uidb64, 'token': token})
     serializer.is_valid(raise_exception=True)
@@ -86,25 +78,40 @@ def get_email_from_token(request, uidb64, token):
 
 @extend_schema(
     methods=['POST'],
-    request=LoginSerializer,
+    request=FirebasePhoneLoginSerializer,
     responses={
-        200: LoginSerializer,
-        400: OpenApiResponse(description="Validation error or invalid credentials."),
-        403: OpenApiResponse(description="Account inactive or forbidden."),
+        200: FirebasePhoneLoginSerializer,
+        403: OpenApiResponse(description="Invalid, expired, or unverified Firebase phone token."),
     },
-    description="Login by email OR username and password. Returns user and JWT tokens.",
+    description="Exchange a Firebase-verified phone identity for an application JWT session.",
 )
 @api_view(['POST'])
 @permission_classes([AllowAny])
-@authentication_classes([]) 
-@parser_classes([JSONParser]) 
-def login_user(request):
-    """
-    Login with email OR username + password.
-    """
-    serializer = LoginSerializer(data=request.data)
+@authentication_classes([])
+@parser_classes([JSONParser])
+def firebase_phone_login(request):
+    serializer = FirebasePhoneLoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+@extend_schema(
+    methods=['POST'],
+    request=FirebaseStaffLoginSerializer,
+    responses={
+        200: FirebaseStaffLoginSerializer,
+        403: OpenApiResponse(description="Invalid sign-in, or the account is not linked for staff sign-in."),
+    },
+    description="Exchange a Firebase-verified staff (admin/barber) identity for an application JWT session. "
+                "Only accounts explicitly linked via firebase_uid can use this.",
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+@parser_classes([JSONParser])
+def firebase_staff_login(request):
+    serializer = FirebaseStaffLoginSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -130,59 +137,6 @@ def logout_user(request):
     
     return Response({'detail': 'Logout successful.'}, status=status.HTTP_200_OK)
     
-
-@extend_schema(
-    methods=['POST'],
-    request=RequestPasswordResetSerializer,
-    responses={
-        200: OpenApiResponse(description="If this email is registered, a password reset email has been sent."),
-        400: OpenApiResponse(description="Validation error."),
-    },
-    description="Request password reset by email - sends reset email with token.",
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@authentication_classes([]) 
-@parser_classes([JSONParser]) 
-def request_password_reset(request):
-    """
-    Request password reset by email, sends reset email with token.
-    """
-    serializer = RequestPasswordResetSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    user = serializer.get_user()
-
-    if user: # Fail silently for security
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-        send_password_reset_email(user.email, uid, token, settings.FRONTEND_URL)
-
-    return Response({'detail': 'If this email is registered, a password reset email has been sent.'}, status.HTTP_200_OK)
-
-
-@extend_schema(
-    methods=['POST'],
-    request=ConfirmPasswordResetSerializer,
-    responses={
-        200: OpenApiResponse(description="Password has been reset successfully."),
-        400: OpenApiResponse(description="Invalid or expired reset link/token."),
-    },
-    description="Confirm password reset by setting new password using token from email.",
-)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@authentication_classes([]) 
-@parser_classes([JSONParser]) 
-def confirm_password_reset(request, uidb64, token):
-    """
-    Confirm password reset by setting new password.
-    """
-    serializer = ConfirmPasswordResetSerializer(data=request.data, context={'uidb64': uidb64, 'token': token})
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-
-    return Response({'detail': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
-
 
 @extend_schema(
     methods=['POST'],

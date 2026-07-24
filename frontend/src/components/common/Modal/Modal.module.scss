@@ -2,6 +2,8 @@
 
 .modal-popup {
   padding: 5rem;
+  max-height: min(90dvh, 84rem);
+  overflow-y: auto;
 
   .modal {
     width: 40rem;
@@ -12,9 +14,12 @@
       justify-content: center;
       gap: 1rem;
 
+      color: $color-gold; // icon color (inherited via currentColor)
+
       .modal-title {
         font-size: 2.5rem;
         font-weight: 600;
+        color: $text-strong;
       }
     }
 
@@ -24,12 +29,14 @@
       .modal-description {
         text-align: center;
         font-size: 1.5rem;
+        color: $text-body;
       }
 
       .modal-step-indicator {
         font-size: 1.2rem;
         font-weight: 500;
         text-align: right;
+        color: $text-muted;
       }
     }
 
@@ -53,5 +60,59 @@
         gap: 1rem;
       }
     }
+  }
+}
+
+.modal-popup.wide {
+  .modal {
+    width: min(76rem, calc(100vw - 10rem));
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .modal-popup {
+    width: calc(100vw - 2rem);
+    max-height: calc(100dvh - 2rem);
+    padding: 3.8rem 1.6rem 1.6rem;
+    border-radius: 1.8rem;
+
+    .modal {
+      width: 100%;
+
+      .modal-header {
+        justify-content: flex-start;
+
+        .modal-title {
+          padding-right: 2rem;
+          font-size: 2rem;
+        }
+      }
+
+      .modal-content {
+        margin-top: 1.4rem;
+
+        .modal-description {
+          text-align: left;
+          font-size: 1.35rem;
+        }
+      }
+
+      .modal-field {
+        margin-top: 1.8rem;
+      }
+
+      .modal-action {
+        position: sticky;
+        bottom: -1.6rem;
+        z-index: 2;
+        margin: 2rem -1.6rem 0;
+        padding: 1.2rem 1.6rem 1.6rem;
+        background: linear-gradient(transparent, $color-surface-panel-bottom 25%);
+      }
+    }
+  }
+
+  .modal-popup.wide .modal {
+    width: 100%;
   }
 }

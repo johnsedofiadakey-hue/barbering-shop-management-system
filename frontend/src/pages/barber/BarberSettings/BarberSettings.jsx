@@ -137,7 +137,7 @@ function BarberSettings() {
               <Button
                 className={styles.actionBtn}
                 type="button"
-                color="primary"
+                color="gold"
                 size="md"
                 onClick={openUploadPicturePopup} //
               >
@@ -153,7 +153,7 @@ function BarberSettings() {
                 size="md"
                 onClick={openDeletePicturePopup} //
               >
-                <Icon name="trash" size="ty" black />
+                <Icon name="trash" size="ty" />
                 <span>Delete picture</span>
               </Button>
             </div>
@@ -209,7 +209,7 @@ function BarberSettings() {
                 className={styles.saveBtn}
                 type="submit"
                 size="md"
-                color="primary"
+                color="gold"
                 disabled={isUpdatingProfile}
                 wide //
               >
@@ -241,7 +241,7 @@ function BarberSettings() {
               size="md"
               onClick={openDeleteProfilePopup} //
             >
-              <Icon name="warning" size="ty" black />
+              <Icon name="warning" size="ty" />
               <span>Delete profile</span>
             </Button>
           </section>

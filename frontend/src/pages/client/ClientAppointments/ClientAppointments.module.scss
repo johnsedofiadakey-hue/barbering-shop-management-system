@@ -1,140 +1,579 @@
 @use '@styles/variables.module.scss' as *;
 
-.client-appointments {
-  margin: 5rem;
+.appointments-page {
+  width: min(112rem, 100%);
+  margin-inline: auto;
+  padding: clamp(2rem, 4vw, 5rem);
+}
 
-  .action {
-    padding-block: 1rem;
+.page-header {
+  margin-bottom: 2.2rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
 
-    display: flex;
-    justify-content: space-between;
-
-    .action-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .refresh-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-
-      .line {
-        display: flex;
-        gap: 1rem;
-      }
-    }
+  .eyebrow {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: $color-gold;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
   }
 
-  .table-title {
+  h1 {
+    color: $text-strong;
+    font-size: clamp(3rem, 5vw, 4.8rem);
+    line-height: 1;
+  }
+
+  p {
+    margin-top: 0.75rem;
+    color: $text-muted;
+    font-size: 1.25rem;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.8rem;
+
+  > * {
+    min-height: 4.4rem;
+    gap: 0.65rem;
+  }
+}
+
+.appointment-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 38rem), 1fr));
+  gap: 1.4rem;
+}
+
+.appointment-card {
+  min-width: 0;
+  padding: 1.8rem;
+  border: 1px solid $border-panel;
+  border-radius: 2rem;
+  background: $color-primary;
+  box-shadow: 0 1.6rem 4rem rgba(0, 0, 0, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  &.active-appointment {
+    border-color: rgba(197, 160, 89, 0.34);
+    background: linear-gradient(145deg, rgba(197, 160, 89, 0.09), transparent 48%), $color-primary;
+  }
+}
+
+.card-header {
+  min-height: 4.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.status-tag {
+  flex: 0 0 auto;
+  min-width: 8rem;
+  text-align: center;
+}
+
+.schedule-block {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+
+  h2 {
+    color: $text-strong;
+    font-size: 1.55rem;
+    line-height: 1.2;
+  }
+
+  p {
+    margin-top: 0.35rem;
+    color: $text-muted;
+    font-size: 1.05rem;
+  }
+}
+
+.date-badge {
+  flex: 0 0 auto;
+  width: 6rem;
+  height: 6rem;
+  border: 1px solid $border-gold-dim;
+  border-radius: 1.4rem;
+  background: rgba(197, 160, 89, 0.08);
+  display: grid;
+  place-items: center;
+
+  strong {
+    color: $text-strong;
+    font-family: $font-heading;
+    font-size: 2.35rem;
+    line-height: 1;
+  }
+
+  span {
+    color: $color-gold;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+}
+
+.appointment-meta {
+  padding: 1.15rem;
+  border: 1px solid $border-hair;
+  border-radius: 1.4rem;
+  background: rgba(0, 0, 0, 0.12);
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.75fr);
+  gap: 1rem;
+
+  div {
+    min-width: 0;
+  }
+
+  span,
+  strong {
+    display: block;
+  }
+
+  span {
+    color: $text-dim;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  strong {
+    margin-top: 0.2rem;
+    color: $text-strong;
+    font-size: 1.05rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.card-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 0.8rem;
+
+  > * {
+    min-height: 4.2rem;
+    flex: 1 1 0;
+    gap: 0.6rem;
+    border-radius: 1.2rem;
+  }
+}
+
+.loading-state,
+.empty-state {
+  min-height: 36rem;
+  padding: 3rem;
+  border: 1px solid $border-panel;
+  border-radius: 2rem;
+  background: $color-primary;
+  color: $text-muted;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1rem;
+  text-align: center;
+
+  h2 {
+    color: $text-strong;
+    font-size: 2rem;
+  }
+
+  .empty-icon {
+    width: 6rem;
+    height: 6rem;
+    border-radius: 1.8rem;
+    background: $color-icon-chip-bg;
+    color: $color-gold;
+    display: grid;
+    place-items: center;
+  }
+}
+
+.visual-choices,
+.schedule-choices {
+  display: grid;
+  gap: 2rem;
+}
+
+.choice-section {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.choice-heading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  > span {
+    flex: 0 0 auto;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid $border-gold-dim;
+    border-radius: 50%;
+    background: $color-icon-chip-bg;
+    color: $color-gold;
+    font-size: 1.1rem;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+  }
+
+  strong,
+  small {
+    display: block;
+  }
+
+  strong {
+    color: $text-strong;
+    font-size: 1.25rem;
+  }
+
+  small {
+    color: $text-dim;
+    font-size: 1rem;
+  }
+}
+
+.barber-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.barber-choice,
+.service-choice,
+.location-choices > button,
+.date-chips > button,
+.time-chips > button {
+  border: 1px solid $border-subtle;
+  background: $color-surface-inset;
+  color: $text-body;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    border-color: $border-gold-dim;
+  }
+
+  &.selected-choice {
+    border-color: $color-gold;
+    background: rgba(197, 160, 89, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(197, 160, 89, 0.18);
+  }
+}
+
+.barber-choice {
+  min-width: 0;
+  padding: 1rem;
+  border-radius: 1.5rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  text-align: left;
+
+  span strong,
+  span small {
+    display: block;
+  }
+
+  span strong {
+    color: $text-strong;
+    font-size: 1.2rem;
+  }
+
+  span small {
+    margin-top: 0.2rem;
+    color: $color-gold;
+    font-size: 1rem;
+  }
+
+  > :last-child {
+    color: $color-gold;
+  }
+}
+
+.service-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.service-choice {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 1.5rem;
+  display: grid;
+  grid-template-columns: 10rem 1fr auto;
+  align-items: stretch;
+  text-align: left;
+
+  > :last-child {
+    align-self: center;
+    margin-right: 1rem;
+    color: $color-gold;
+  }
+}
+
+.service-choice-media {
+  min-height: 12rem;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(197, 160, 89, 0.16), $color-primary);
+  color: $color-gold;
+  display: grid;
+  place-items: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.service-choice-copy {
+  min-width: 0;
+  padding: 1.2rem;
+
+  strong {
+    color: $text-strong;
+    font-size: 1.3rem;
+  }
+
+  p {
+    margin-top: 0.35rem;
+    color: $text-muted;
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+
+  span {
+    display: block;
+    margin-top: 0.7rem;
+    color: $color-gold;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+}
+
+.date-chips,
+.time-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+
+  > button {
+    min-height: 4.2rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 1.1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  > p {
+    color: $text-dim;
+    font-size: 1.05rem;
+  }
+}
+
+.location-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+
+  > button {
+    min-width: 0;
+    padding: 1.2rem;
+    border-radius: 1.4rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
+    text-align: left;
 
-    .table-title-name {
+    > :first-child {
+      color: $color-gold;
+    }
+
+    strong,
+    small {
       display: block;
-      height: 1.7rem;
-      font-weight: 600;
     }
-  }
 
-  .date-container {
-    display: flex;
-    flex-direction: start;
-
-    .date {
-      width: 6.5rem;
-
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      .date {
-        font-size: 1.15rem;
-        font-weight: 600;
-      }
-
-      .slot {
-        color: $color-primary;
-        font-size: 1.05rem;
-        font-weight: 500;
-      }
+    strong {
+      color: $text-strong;
+      font-size: 1.2rem;
     }
-  }
 
-  .amount-spent {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    .amount {
-      font-size: 1.5rem;
-      font-weight: 600;
+    small {
+      color: $text-dim;
+      font-size: 0.95rem;
     }
-  }
-
-  .services {
-    font-size: 1.08rem;
-    font-weight: 600;
-
-    .no-services {
-      color: $color-primary;
-      font-style: italic;
-      font-weight: 500;
-    }
-  }
-
-  .status-tag,
-  .reminder-tag {
-    width: 8rem;
-    text-align: center;
   }
 }
 
 .confirmation {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.confirm-row {
+  min-height: 4.5rem;
+  padding: 1rem;
+  border: 1px solid $border-subtle;
+  border-radius: 1.1rem;
+  background: $color-surface-inset;
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  align-items: center;
   gap: 1rem;
+}
 
-  .confirm-row {
-    height: 4rem;
-    padding: 1rem;
+.confirm-block {
+  color: $text-muted;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
 
-    background: $color-secondary;
-    border-radius: $border-radius;
+.confirm-label {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 
-    display: flex;
-    gap: 1rem;
+.confirm-value {
+  color: $text-strong;
+  font-size: 1.1rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: $bp-medium-small) {
+  .appointments-page {
+    padding: 1.6rem 1.2rem 2.4rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
     align-items: center;
 
-    .confirm-block {
-      width: 8rem;
-      margin-right: 1rem;
+    h1 {
+      font-size: 2.8rem;
+    }
 
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
+    p {
+      margin-top: 0.5rem;
+      font-size: 1.08rem;
+    }
+  }
 
-      .confirm-label {
-        padding-left: 0.5rem;
-        color: $color-primary;
-        font-size: 1.7rem;
-        font-weight: 600;
+  .header-actions {
+    align-self: stretch;
+
+    .refresh-btn {
+      width: 4.3rem;
+      min-width: 4.3rem;
+      padding: 0;
+      border-radius: 50%;
+
+      span {
+        display: none;
       }
     }
 
-    .confirm-content {
-      display: flex;
-      flex-direction: column;
+    .action-btn {
+      padding-inline: 1.1rem;
+      border-radius: 1.2rem;
+    }
+  }
 
-      .confirm-value {
-        color: $color-primary;
-        font-size: 1.4rem;
-        word-break: break-word;
-      }
+  .appointment-list {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .appointment-card {
+    padding: 1.4rem;
+    border-radius: 1.8rem;
+    gap: 1.25rem;
+  }
+
+  .appointment-meta {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+    padding: 1rem;
+  }
+
+  .card-actions > * {
+    min-height: 4.6rem;
+  }
+
+  .confirm-row {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+  }
+
+  .barber-choice-grid,
+  .service-choice-grid,
+  .location-choices {
+    grid-template-columns: 1fr;
+  }
+
+  .service-choice {
+    grid-template-columns: 9rem 1fr auto;
+  }
+
+  .service-choice-media {
+    min-height: 11rem;
+  }
+
+  .date-chips,
+  .time-chips {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > button {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 23em) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+
+    .action-btn {
+      flex: 1;
+    }
+  }
+
+  .appointment-meta {
+    grid-template-columns: 1fr 1fr;
+
+    div:first-child {
+      grid-column: 1 / -1;
     }
   }
 }

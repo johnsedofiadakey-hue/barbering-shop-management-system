@@ -8,6 +8,7 @@ from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.models import (
     Admin,
@@ -26,7 +27,6 @@ class ImageUploadTest(APITestCase):
     
     def setUp(self):
         # Endpoint URLs
-        self.login_url = reverse("login_user")
         self.manage_image_url = reverse("manage_profile_image")
         self.profile_url_map = {
             'admin': reverse("manage_admin_profile"),
@@ -69,14 +69,12 @@ class ImageUploadTest(APITestCase):
 
 
     def login_as(self, user_type):
-        creds = {
-            "admin": (self.admin_user.username, self.admin_password),
-            "barber": (self.barber_user.username, self.barber_password),
-            "client": (self.client_user.username, self.client_password),
+        users = {
+            "admin": self.admin_user,
+            "barber": self.barber_user,
+            "client": self.client_user,
         }
-        username, password = creds[user_type]
-        response = self.client.post(self.login_url, {"username": username, "password": password}, format="json")
-        token = response.data["token"]["access_token"]
+        token = str(RefreshToken.for_user(users[user_type]).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
 

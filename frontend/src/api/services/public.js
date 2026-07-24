@@ -48,3 +48,18 @@ export async function getBarberServicesPublic(barberId) {
   const { data } = await api.instance.get(ENDPOINTS.public.barberServices(barberId));
   return data;
 }
+
+export async function getShopSettings() {
+  const { data } = await api.instance.get(ENDPOINTS.public.shop);
+  return data;
+}
+
+export async function getPortfolio() {
+  const { data } = await api.instance.get(ENDPOINTS.public.portfolio);
+  return data;
+}
+
+export async function getBeforeAfter() {
+  const { data } = await api.instance.get(ENDPOINTS.public.beforeAfter);
+  return data;
+}

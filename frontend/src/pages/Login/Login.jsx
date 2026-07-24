@@ -1,113 +1,201 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
-import { isEmail } from '@utils/utils';
-import styles from './Login.module.scss';
 import api from '@api';
+import styles from './Login.module.scss';
 
-import Spinner from '@components/common/Spinner/Spinner';
-import Card from '@components/common/Card/Card';
 import Form from '@components/common/Form/Form';
 import Input from '@components/common/Input/Input';
 import Button from '@components/common/Button/Button';
 import Error from '@components/common/Error/Error';
-import Hero from '@components/ui/Hero/Hero';
-import SidePanel from '@components/ui/SidePanel/SidePanel';
+import Spinner from '@components/common/Spinner/Spinner';
 import Icon from '@components/common/Icon/Icon';
+import heroImage from '@assets/images/portfolio/hero-barbershop.webp';
 
-function Login() {
-  const { login, loginWithOtp, isAuthenticated, isLoggingIn } = useAuth();
+function Login({ initialStaffMode = false }) {
+  const { loginWithOtp, loginWithFirebaseEmail, isAuthenticated, isLoggingIn, profile } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
-
-  const [staffMode, setStaffMode] = useState(false); // false = client phone/OTP login, true = barber/admin password login
-  const [otpPhone, setOtpPhone] = useState(null); // set once a code has been sent, moves the OTP form to step 2
+  const staffMode = initialStaffMode;
+  const [otpPhone, setOtpPhone] = useState(null);
   const [isSendingCode, setIsSendingCode] = useState(false);
+  const completingClientLogin = useRef(false);
 
-  /**
-   * On authentication state change, redirect authenticated users away from login.
-   */
+  const nextPath = useMemo(() => {
+    const requested = new URLSearchParams(location.search).get('next');
+    return requested?.startsWith('/') && !requested.startsWith('//') ? requested : '/client/dashboard';
+  }, [location.search]);
+
+  const isReturningLogin = !staffMode && nextPath === '/client/dashboard';
+
   useEffect(() => {
-    if (!isLoggingIn && isAuthenticated) navigate('/dashboard', { replace: true });
-  }, [isLoggingIn, isAuthenticated, navigate]);
+    if (completingClientLogin.current || isLoggingIn || !isAuthenticated || !profile) return;
+    const needsSetup = profile.role === 'CLIENT' && (!profile.name?.trim() || !profile.surname?.trim());
+    navigate(needsSetup ? `/client/welcome?next=${encodeURIComponent(nextPath)}` : nextPath, { replace: true });
+  }, [isLoggingIn, isAuthenticated, navigate, nextPath, profile]);
 
-  // Don't show login if redirecting
   if (isAuthenticated) return null;
 
-  /**
-   * Step 1 (client): request an OTP code for the entered phone number.
-   */
   const handleRequestCode = async ({ phone_number }) => {
     setIsSendingCode(true);
-
     try {
-      await api.auth.requestOtp(phone_number.trim());
-      setOtpPhone(phone_number.trim());
+      const normalized = phone_number.trim();
+      await api.auth.requestOtp(normalized);
+      setOtpPhone(normalized);
     } finally {
       setIsSendingCode(false);
     }
   };
 
-  /**
-   * Step 2 (client): verify the received code and log in.
-   */
   const handleVerifyCode = async ({ code }) => {
-    await loginWithOtp(otpPhone, code.trim()); // The AuthProvider will redirect due to isAuthenticated update.
+    completingClientLogin.current = true;
+    try {
+      const session = await loginWithOtp(otpPhone, code.trim());
+      const destination = session.requires_profile_setup ? `/client/welcome?next=${encodeURIComponent(nextPath)}` : nextPath;
+      navigate(destination, { replace: true });
+    } finally {
+      completingClientLogin.current = false;
+    }
   };
 
-  /**
-   * Staff (barber/admin): classic identifier + password login.
-   */
-  const handleStaffLogin = async ({ identifier, password }) => {
-    const payload = isEmail(identifier) ? { email: identifier, password } : { username: identifier, password };
-    await login(payload); // The AuthProvider will redirect due to isAuthenticated update.
+  const handleStaffFirebaseLogin = async ({ email, password }) => {
+    await loginWithFirebaseEmail(email.trim(), password);
   };
 
   return (
-    <Hero>
-      <Hero.Left>
-        <SidePanel heading="Welcome back" subheading="Your barber, one text away">
-          <SidePanel.Inner>
-            <div className={styles.description}>
-              <h2>Log in with just your phone</h2>
-              <ul className={styles.features}>
-                <li>
-                  <Icon name="dial" size="sm" />
-                  <p>No password needed — we text you a code.</p>
-                </li>
-                <li>
-                  <Icon name="appointment" size="sm" />
-                  <p>See, reschedule or cancel your bookings.</p>
-                </li>
-                <li>
-                  <Icon name="review" size="sm" />
-                  <p>Review your barber after your cut.</p>
-                </li>
-              </ul>
-            </div>
-          </SidePanel.Inner>
+    <div className={styles.loginPage}>
+      <div className={styles.loginVisual}>
+        <img src={heroImage} alt="Premium barbershop service" />
+        <div className={styles.visualOverlay} />
+        <div className={styles.visualCopy}>
+          <span>Your chair is waiting</span>
+          <h1>
+            One number.
+            <br />
+            One quick code.
+            <br />
+            <em>You are in.</em>
+          </h1>
+          <p>No password for clients. Your appointments stay connected to your phone number.</p>
+        </div>
+      </div>
 
-          <SidePanel.Actions>
-            <p className={styles.note}>First time? Just enter your number — your account is created automatically.</p>
-          </SidePanel.Actions>
-        </SidePanel>
-      </Hero.Left>
+      <section className={styles.loginPanel}>
+        <div className={styles.mobileIntro}>
+          <span>
+            {staffMode ? 'Customer care & team portal' : isReturningLogin ? 'Your client account' : 'Secure mobile booking'}
+          </span>
+          <h1>
+            {otpPhone
+              ? 'Check your messages'
+              : staffMode
+                ? 'Staff access'
+                : isReturningLogin
+                  ? 'Welcome back'
+                  : 'Book from your phone'}
+          </h1>
+          <p>
+            {otpPhone
+              ? `Enter the six-digit code sent to ${otpPhone}.`
+              : staffMode
+                ? 'Sign in with the email linked to your staff account.'
+                : isReturningLogin
+                  ? 'Use the same phone number as before to open your appointments and history.'
+                  : 'Simple, secure, and no client password to remember.'}
+          </p>
+        </div>
 
-      <Hero.Right className={styles.rightPanel}>
-        <Card className={styles.login}>
-          {staffMode ? (
-            <Form className={styles.loginForm} initialFields={{ identifier: '', password: '' }} onSubmit={handleStaffLogin}>
-              <h2 className={styles.label}>Staff login</h2>
-
+        <div className={styles.loginCard}>
+          {!staffMode && !otpPhone && (
+            <Form initialFields={{ phone_number: '' }} onSubmit={handleRequestCode}>
+              <div className={styles.formHeader}>
+                <span className={styles.iconChip}>
+                  <Icon name="dial" size="md" />
+                </span>
+                <div>
+                  <small>Step 1 of 2</small>
+                  <h2>Enter your phone</h2>
+                </div>
+              </div>
               <Input
-                label="Email or username"
-                name="identifier"
+                label="Mobile number"
+                name="phone_number"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="+233 24 000 0000"
+                required
+                disabled={isSendingCode}
+                size="md"
+              />
+              <p className={styles.privacyNote}>
+                We only use this number for secure login and appointment updates. You stay signed in on this phone until you log
+                out.
+              </p>
+              <div id="firebase-recaptcha-container" />
+              <Button type="submit" color="gold" size="lg" disabled={isSendingCode} wide>
+                {isSendingCode ? (
+                  <span className={styles.line}>
+                    <Spinner size="sm" /> Sending code
+                  </span>
+                ) : (
+                  'Continue'
+                )}
+              </Button>
+              <Error />
+            </Form>
+          )}
+
+          {!staffMode && otpPhone && (
+            <Form initialFields={{ code: '' }} onSubmit={handleVerifyCode}>
+              <div className={styles.formHeader}>
+                <span className={styles.iconChip}>
+                  <Icon name="email_base" size="md" />
+                </span>
+                <div>
+                  <small>Step 2 of 2</small>
+                  <h2>Verify your code</h2>
+                </div>
+              </div>
+              <Input
+                label="Six-digit code"
+                name="code"
                 type="text"
-                autoComplete="username"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                placeholder="000000"
                 required
                 disabled={isLoggingIn}
                 size="md"
               />
+              <Button type="submit" color="gold" size="lg" disabled={isLoggingIn} wide>
+                {isLoggingIn ? (
+                  <span className={styles.line}>
+                    <Spinner size="sm" /> Verifying
+                  </span>
+                ) : (
+                  'Verify & continue'
+                )}
+              </Button>
+              <Button type="button" color="link" size="sm" onClick={() => setOtpPhone(null)} wide>
+                Use a different number
+              </Button>
+              <Error />
+            </Form>
+          )}
 
+          {staffMode && (
+            <Form initialFields={{ email: '', password: '' }} onSubmit={handleStaffFirebaseLogin}>
+              <div className={styles.formHeader}>
+                <span className={styles.iconChip}>
+                  <Icon name="barber" size="md" />
+                </span>
+                <div>
+                  <small>Team portal</small>
+                  <h2>Staff login</h2>
+                </div>
+              </div>
+              <Input label="Email" name="email" type="email" autoComplete="username" required disabled={isLoggingIn} size="md" />
               <Input
                 label="Password"
                 name="password"
@@ -117,108 +205,62 @@ function Login() {
                 disabled={isLoggingIn}
                 size="md"
               />
-
-              <Button className={styles.loginBtn} type="submit" color="gold" size="md" disabled={isLoggingIn} wide>
-                <span className={styles.line}>
-                  {isLoggingIn ? (
-                    <>
-                      <Spinner size={'sm'} /> Logging in...
-                    </>
-                  ) : (
-                    'Login'
-                  )}
-                </span>
+              <Button type="submit" color="gold" size="lg" disabled={isLoggingIn} wide>
+                {isLoggingIn ? (
+                  <span className={styles.line}>
+                    <Spinner size="sm" /> Signing in
+                  </span>
+                ) : (
+                  'Sign in'
+                )}
               </Button>
-
-              <Button className={styles.forgotBtn} href="/reset-password" size="sm" color="link">
-                Forgot password?
-              </Button>
-
-              <Error />
-            </Form>
-          ) : otpPhone ? (
-            <Form className={styles.loginForm} initialFields={{ code: '' }} onSubmit={handleVerifyCode}>
-              <h2 className={styles.label}>Enter your code</h2>
-              <p className={styles.otpHint}>
-                We sent a 6-digit code to <strong>{otpPhone}</strong>
-              </p>
-
-              <Input
-                label="Verification code"
-                name="code"
-                type="text"
-                autoComplete="one-time-code"
-                inputMode="numeric"
-                required
-                disabled={isLoggingIn}
-                size="md"
-              />
-
-              <Button className={styles.loginBtn} type="submit" color="gold" size="md" disabled={isLoggingIn} wide>
-                <span className={styles.line}>
-                  {isLoggingIn ? (
-                    <>
-                      <Spinner size={'sm'} /> Verifying...
-                    </>
-                  ) : (
-                    'Verify & login'
-                  )}
-                </span>
-              </Button>
-
-              <Button className={styles.forgotBtn} type="button" size="sm" color="link" onClick={() => setOtpPhone(null)}>
-                Use a different number
-              </Button>
-
-              <Error />
-            </Form>
-          ) : (
-            <Form className={styles.loginForm} initialFields={{ phone_number: '' }} onSubmit={handleRequestCode}>
-              <h2 className={styles.label}>Login</h2>
-              <p className={styles.otpHint}>Enter your phone number and we&apos;ll text you a login code.</p>
-
-              <Input
-                label="Phone number"
-                name="phone_number"
-                type="tel"
-                autoComplete="tel"
-                placeholder="+15551234567"
-                required
-                disabled={isSendingCode}
-                size="md"
-              />
-
-              <Button className={styles.loginBtn} type="submit" color="gold" size="md" disabled={isSendingCode} wide>
-                <span className={styles.line}>
-                  {isSendingCode ? (
-                    <>
-                      <Spinner size={'sm'} /> Sending code...
-                    </>
-                  ) : (
-                    'Send code'
-                  )}
-                </span>
-              </Button>
-
               <Error />
             </Form>
           )}
 
-          <Button
-            className={styles.staffToggle}
-            type="button"
-            size="sm"
-            color="link"
-            onClick={() => {
-              setStaffMode((v) => !v);
-              setOtpPhone(null);
-            }}
-          >
-            {staffMode ? 'Client login (phone number)' : 'Barber or admin? Staff login'}
-          </Button>
-        </Card>
-      </Hero.Right>
-    </Hero>
+          <div className={styles.modeSwitch}>
+            {staffMode ? (
+              <>
+                <span>Booking a cut or returning to your account?</span>
+                <Button href="/login?next=%2Fclient%2Fdashboard" size="sm" color="link">
+                  Use client login
+                </Button>
+              </>
+            ) : (
+              <span>New or returning client? Use the same secure phone login.</span>
+            )}
+          </div>
+        </div>
+
+        <div className={styles.loginBenefits}>
+          {staffMode ? (
+            <>
+              <span>
+                <Icon name="check" size="sm" /> Secure staff access
+              </span>
+              <span>
+                <Icon name="appointment" size="sm" /> Manage operations
+              </span>
+              <span>
+                <Icon name="settings" size="sm" /> Role-controlled tools
+              </span>
+            </>
+          ) : (
+            <>
+              <span>
+                <Icon name="check" size="sm" /> Stay signed in on this phone
+              </span>
+              <span>
+                <Icon name="appointment" size="sm" /> Manage bookings
+              </span>
+              <span>
+                <Icon name="email_base" size="sm" /> One-time SMS code
+              </span>
+            </>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 

@@ -36,7 +36,11 @@ export async function getBarberServices() {
  * Creates a new service for the barber.
  */
 export async function createBarberService(serviceData) {
-  const { data } = await api.instance.post(ENDPOINTS.barber.services, serviceData);
+  const formData = new FormData();
+  Object.entries(serviceData).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') formData.append(key, value);
+  });
+  const { data } = await api.instance.post(ENDPOINTS.barber.services, formData);
   return data;
 }
 
@@ -44,7 +48,11 @@ export async function createBarberService(serviceData) {
  * Updates the details of an existing barber service.
  */
 export async function updateBarberService(serviceId, patchData) {
-  const { data } = await api.instance.patch(ENDPOINTS.barber.service(serviceId), patchData);
+  const formData = new FormData();
+  Object.entries(patchData).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') formData.append(key, value);
+  });
+  const { data } = await api.instance.patch(ENDPOINTS.barber.service(serviceId), formData);
   return data;
 }
 
@@ -68,6 +76,11 @@ export async function getBarberAvailabilities() {
  */
 export async function getBarberAppointments() {
   const { data } = await api.instance.get(ENDPOINTS.barber.appointments);
+  return data;
+}
+
+export async function updateBarberAppointmentStatus(appointmentId, status) {
+  const { data } = await api.instance.patch(ENDPOINTS.barber.appointment(appointmentId), { status });
   return data;
 }
 

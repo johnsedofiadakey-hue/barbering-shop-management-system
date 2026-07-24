@@ -4,8 +4,9 @@ import { useAuth } from '@hooks/useAuth';
 import { useForm } from '@hooks/useForm';
 import styles from './ClientAppointments.module.scss';
 import api from '@api';
+import { formatBookingDate, formatTime, formatTimeRange } from '@utils/dateTime';
+import { getClientStatusLabel } from '@utils/status';
 
-import Pagination from '@components/common/Pagination/Pagination';
 import Input from '@components/common/Input/Input';
 import Modal from '@components/common/Modal/Modal';
 import Icon from '@components/common/Icon/Icon';
@@ -13,6 +14,24 @@ import Tag from '@components/common/Tag/Tag';
 import Button from '@components/common/Button/Button';
 import Spinner from '@components/common/Spinner/Spinner';
 import Profile from '@components/ui/Profile/Profile';
+import ProfileImage from '@components/ui/ProfileImage/ProfileImage';
+
+import fadeImage from '@assets/images/portfolio/skin-fade.webp';
+import beardImage from '@assets/images/portfolio/beard-sculpt.webp';
+import towelImage from '@assets/images/portfolio/hot-towel.webp';
+
+const SERVICE_FALLBACK_IMAGES = [fadeImage, beardImage, towelImage];
+
+const getServiceFallbackImage = (service, index) => {
+  const name = service.name?.toLowerCase() || '';
+  if (name.includes('beard')) return beardImage;
+  if (name.includes('towel') || name.includes('shave')) return towelImage;
+  if (name.includes('fade') || name.includes('cut')) return fadeImage;
+  return SERVICE_FALLBACK_IMAGES[index % SERVICE_FALLBACK_IMAGES.length];
+};
+
+const formatDate = (value, options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) =>
+  value ? new Intl.DateTimeFormat('en-GH', options).format(new Date(`${value}T12:00:00`)) : '';
 
 function ClientAppointments() {
   const { profile } = useAuth();
@@ -23,6 +42,7 @@ function ClientAppointments() {
   // Parse barber id from query:
   const queryParams = new URLSearchParams(location.search);
   const preselectBarberId = queryParams.get('bookBarber');
+  const directBooking = queryParams.get('book') === '1';
 
   const [appointments, setAppointments] = useState([]);
 
@@ -30,13 +50,23 @@ function ClientAppointments() {
   const [isLoadingBarberProfiles, setIsLoadingBarberProfiles] = useState(true);
 
   const [barbers, setBarbers] = useState({}); // barberId -> profile
+  const [shop, setShop] = useState({ currency_symbol: 'GH₵', home_visits_enabled: true, home_visit_fee: 0 });
 
   // Popup states
-  const [bookPopup, setBookPopup] = useState(Boolean(preselectBarberId)); // Local state for controlling the modal and preselection
+  const [bookPopup, setBookPopup] = useState(Boolean(preselectBarberId || directBooking));
   const [cancelPopup, setCancelPopup] = useState({ open: false, appointment: null });
+  const [reschedulePopup, setReschedulePopup] = useState({ open: false, appointment: null });
 
   // Preselected barber initial fields state from parameters
-  const [bookFields, setBookFields] = useState({ barber_id: preselectBarberId || '', services: [], date: '', slot: '' });
+  const [bookFields, setBookFields] = useState({
+    barber_id: preselectBarberId || '',
+    services: [],
+    date: '',
+    slot: '',
+    location_type: 'SHOP',
+    home_address: '',
+    notes: '',
+  });
 
   /**
    * Defines fetching all appointmentts from api (single responsibility, outside effect)
@@ -86,6 +116,10 @@ function ClientAppointments() {
   useEffect(() => {
     if (profile?.role === 'CLIENT') {
       fetchAppointments();
+      api.pub
+        .getShopSettings()
+        .then(({ shop }) => setShop(shop))
+        .catch(() => {});
     }
   }, [profile, fetchAppointments]);
 
@@ -102,35 +136,56 @@ function ClientAppointments() {
    *  If query param is present and modal isn't open, open it and preselect barber
    */
   useEffect(() => {
-    if (!preselectBarberId) return;
+    if (!preselectBarberId && !directBooking) return;
 
     // Open and preselect the barber (ok even if already open)
     openBookPopup();
-    setBookFields((fields) => ({ ...fields, barber_id: preselectBarberId }));
+    if (preselectBarberId) setBookFields((fields) => ({ ...fields, barber_id: preselectBarberId }));
 
     // Remove the param immediately so closing won't reopen the modal
     const params = new URLSearchParams(location.search);
     params.delete('bookBarber');
+    params.delete('book');
     navigate({ search: params.toString() }, { replace: true });
-  }, [preselectBarberId, location.search, navigate]);
+  }, [preselectBarberId, directBooking, location.search, navigate]);
 
   // Book appointment popup state handlers
   const openBookPopup = () => setBookPopup(true);
+  const openRebookPopup = (appointment) => {
+    setBookFields({
+      barber_id: String(appointment.barber_id || ''),
+      services: [],
+      date: '',
+      slot: '',
+      location_type: appointment.location_type || 'SHOP',
+      home_address: appointment.home_address || '',
+      notes: '',
+    });
+    setBookPopup(true);
+  };
   const closeBookPopup = () => {
     setBookPopup(false);
-    setBookFields({ barber_id: '', services: [], date: '', slot: '' });
+    setBookFields({ barber_id: '', services: [], date: '', slot: '', location_type: 'SHOP', home_address: '', notes: '' });
   };
 
   // Cancel apointment popup state handlers
   const openCancelPopup = (appointment) => setCancelPopup({ open: true, appointment });
   const closeCancelPopup = () => setCancelPopup({ open: false, appointment: null });
+  const openReschedulePopup = (appointment) => setReschedulePopup({ open: true, appointment });
+  const closeReschedulePopup = () => setReschedulePopup({ open: false, appointment: null });
 
   /**
    * Handles booking appointmentss
    */
-  const handleBookAppointment = async ({ barber_id, services, date, slot }) => {
-    await api.client.createClientAppointment(barber_id, { services, date, slot });
+  const handleBookAppointment = async ({ barber_id, services, date, slot, location_type, home_address, notes }) => {
+    await api.client.createClientAppointment(barber_id, { services, date, slot, location_type, home_address, notes });
     closeBookPopup();
+    await fetchAppointments();
+  };
+
+  const handleRescheduleAppointment = async (appointmentId, { date, slot }) => {
+    await api.client.rescheduleClientAppointment(appointmentId, { date, slot });
+    closeReschedulePopup();
     await fetchAppointments();
   };
 
@@ -161,24 +216,130 @@ function ClientAppointments() {
     return services;
   }, []);
 
-  /**
-   * Services selection component to render the checkbox input of services to be selected
-   */
-  const ServiceSelect = () => {
-    const { fields } = useForm();
+  const VisualBarberServiceSelect = () => {
+    const { fields, handleChange } = useForm();
+    const [availableBarbers, setAvailableBarbers] = useState([]);
+    const [availableServices, setAvailableServices] = useState([]);
+    const [loadingChoices, setLoadingChoices] = useState(true);
 
-    // If no barber is selected render error
-    if (!fields.barber_id) return <div>Please select a barber first.</div>;
+    useEffect(() => {
+      let mounted = true;
+      setLoadingChoices(true);
+      fetchBarbers()
+        .then((items) => mounted && setAvailableBarbers(items || []))
+        .finally(() => mounted && setLoadingChoices(false));
+      return () => {
+        mounted = false;
+      };
+    }, []);
+
+    useEffect(() => {
+      let mounted = true;
+      if (!fields.barber_id) {
+        setAvailableServices([]);
+        return () => {
+          mounted = false;
+        };
+      }
+      fetchServices(fields.barber_id).then((items) => mounted && setAvailableServices(items || []));
+      return () => {
+        mounted = false;
+      };
+    }, [fields.barber_id]);
+
+    const chooseBarber = (barberId) => {
+      handleChange({ target: { name: 'barber_id', value: String(barberId) } });
+      handleChange({ target: { name: 'services', value: [] } });
+      handleChange({ target: { name: 'date', value: '' } });
+      handleChange({ target: { name: 'slot', value: '' } });
+    };
+
+    const toggleService = (serviceId) => {
+      const value = String(serviceId);
+      const selected = fields.services || [];
+      handleChange({
+        target: {
+          name: 'services',
+          value: selected.includes(value) ? selected.filter((id) => id !== value) : [...selected, value],
+        },
+      });
+      handleChange({ target: { name: 'slot', value: '' } });
+    };
+
+    if (loadingChoices) return <Spinner />;
 
     return (
-      <Input
-        type="checkbox"
-        name="services"
-        label="Select one or more services"
-        fetcher={() => fetchServices(fields.barber_id)}
-        mapOption={(service) => ({ key: String(service.id), value: `${service.name} $${service.price}` })}
-        required //
-      />
+      <div className={styles.visualChoices}>
+        <div className={styles.choiceSection}>
+          <div className={styles.choiceHeading}>
+            <span>1</span>
+            <div>
+              <strong>Choose your barber</strong>
+              <small>Tap a face to select</small>
+            </div>
+          </div>
+          <div className={styles.barberChoiceGrid}>
+            {availableBarbers.map((barber) => {
+              const selected = String(fields.barber_id) === String(barber.id);
+              return (
+                <button
+                  className={`${styles.barberChoice} ${selected ? styles.selectedChoice : ''}`}
+                  type="button"
+                  key={barber.id}
+                  onClick={() => chooseBarber(barber.id)}
+                  aria-pressed={selected}
+                >
+                  <ProfileImage src={barber.profile_image} size="6.2rem" />
+                  <span>
+                    <strong>{`${barber.name || ''} ${barber.surname || ''}`.trim() || 'Your barber'}</strong>
+                    <small>★ {Number(barber.average_rating || 0).toFixed(1)}</small>
+                  </span>
+                  {selected && <Icon name="check" size="sm" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className={styles.choiceSection}>
+          <div className={styles.choiceHeading}>
+            <span>2</span>
+            <div>
+              <strong>Choose your look</strong>
+              <small>{fields.barber_id ? 'Select one or more services' : 'Choose a barber first'}</small>
+            </div>
+          </div>
+          {fields.barber_id && (
+            <div className={styles.serviceChoiceGrid}>
+              {availableServices.map((service, index) => {
+                const selected = (fields.services || []).includes(String(service.id));
+                const serviceImage = service.image || getServiceFallbackImage(service, index);
+                return (
+                  <button
+                    className={`${styles.serviceChoice} ${selected ? styles.selectedChoice : ''}`}
+                    type="button"
+                    key={service.id}
+                    onClick={() => toggleService(service.id)}
+                    aria-pressed={selected}
+                  >
+                    <div className={styles.serviceChoiceMedia}>
+                      <img src={serviceImage} alt="" />
+                    </div>
+                    <div className={styles.serviceChoiceCopy}>
+                      <strong>{service.name}</strong>
+                      <p>{service.description || 'A tailored cut finished to your preference.'}</p>
+                      <span>
+                        {service.duration_minutes} min · {shop.currency_symbol} {Number(service.price).toFixed(0)}
+                      </span>
+                    </div>
+                    {selected && <Icon name="check" size="sm" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     );
   };
 
@@ -201,9 +362,9 @@ function ClientAppointments() {
     /**
      * Function that fetches all slots of the selected availability date from the API (useCallback to fix endless loop)
      */
-    const fetchSlots = useCallback(async (barberId, date) => {
+    const fetchSlots = useCallback(async (barberId, date, services) => {
       if (!barberId || !date) return [];
-      const { slots } = await api.pub.getBarberSlotsPublic(barberId, { date });
+      const { slots } = await api.pub.getBarberSlotsPublic(barberId, { date, services });
 
       return slots;
     }, []);
@@ -219,7 +380,7 @@ function ClientAppointments() {
           name="date"
           label="Date"
           fetcher={() => fetchAvailabilities(fields.barber_id)}
-          mapOption={(availability) => ({ key: availability.date, value: availability.date })}
+          mapOption={(availability) => ({ key: availability.date, value: formatBookingDate(availability.date) })}
           required //
         />
 
@@ -227,14 +388,162 @@ function ClientAppointments() {
           type="dropdown"
           size="md"
           name="slot"
-          label="Slot"
-          fetcher={() => fetchSlots(fields.barber_id, fields.date)}
-          reloadKey={`${fields.barber_id}-${fields.date}`}
-          mapOption={(slot) => ({ key: slot, value: slot })}
+          label="Time"
+          fetcher={() => fetchSlots(fields.barber_id, fields.date, fields.services)}
+          reloadKey={`${fields.barber_id}-${fields.date}-${(fields.services || []).join(',')}`}
+          mapOption={(slot) => ({ key: slot, value: formatTime(slot) })}
           disabled={!fields.date}
           required //
         />
       </>
+    );
+  };
+
+  const ScheduleLocationSelect = () => {
+    const { fields, handleChange } = useForm();
+    const [dates, setDates] = useState([]);
+    const [slots, setSlots] = useState([]);
+    const [loadingSchedule, setLoadingSchedule] = useState(true);
+
+    useEffect(() => {
+      let mounted = true;
+      setLoadingSchedule(true);
+      api.pub
+        .getBarberAvailabilitiesPublic(fields.barber_id)
+        .then(({ availabilities }) => mounted && setDates(availabilities || []))
+        .finally(() => mounted && setLoadingSchedule(false));
+      return () => {
+        mounted = false;
+      };
+    }, [fields.barber_id]);
+
+    useEffect(() => {
+      let mounted = true;
+      if (!fields.date) {
+        setSlots([]);
+        return () => {
+          mounted = false;
+        };
+      }
+      api.pub
+        .getBarberSlotsPublic(fields.barber_id, { date: fields.date, services: fields.services })
+        .then(({ slots }) => mounted && setSlots(slots || []));
+      return () => {
+        mounted = false;
+      };
+    }, [fields.barber_id, fields.date, fields.services]);
+
+    const chooseValue = (name, value) => handleChange({ target: { name, value } });
+
+    return (
+      <div className={styles.scheduleChoices}>
+        <div className={styles.choiceSection}>
+          <div className={styles.choiceHeading}>
+            <span>1</span>
+            <div>
+              <strong>Pick a date</strong>
+              <small>Only available days are shown</small>
+            </div>
+          </div>
+          {loadingSchedule ? (
+            <Spinner />
+          ) : (
+            <div className={styles.dateChips}>
+              {dates.map((availability) => (
+                <button
+                  type="button"
+                  key={availability.date}
+                  className={fields.date === availability.date ? styles.selectedChoice : ''}
+                  onClick={() => {
+                    chooseValue('date', availability.date);
+                    chooseValue('slot', '');
+                  }}
+                >
+                  {formatBookingDate(availability.date)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.choiceSection}>
+          <div className={styles.choiceHeading}>
+            <span>2</span>
+            <div>
+              <strong>Pick a time</strong>
+              <small>Displayed in AM/PM</small>
+            </div>
+          </div>
+          <div className={styles.timeChips}>
+            {fields.date && slots.length === 0 && <p>No time is available for this service combination.</p>}
+            {slots.map((slot) => (
+              <button
+                type="button"
+                key={slot}
+                className={fields.slot === slot ? styles.selectedChoice : ''}
+                onClick={() => chooseValue('slot', slot)}
+              >
+                {formatTime(slot)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.choiceSection}>
+          <div className={styles.choiceHeading}>
+            <span>3</span>
+            <div>
+              <strong>Where?</strong>
+              <small>Choose the shop or an available home visit</small>
+            </div>
+          </div>
+          <div className={styles.locationChoices}>
+            <button
+              type="button"
+              className={fields.location_type === 'SHOP' ? styles.selectedChoice : ''}
+              onClick={() => chooseValue('location_type', 'SHOP')}
+            >
+              <Icon name="barber" size="md" />
+              <span>
+                <strong>At the shop</strong>
+                <small>No travel fee</small>
+              </span>
+            </button>
+            {shop.home_visits_enabled && (
+              <button
+                type="button"
+                className={fields.location_type === 'HOME' ? styles.selectedChoice : ''}
+                onClick={() => chooseValue('location_type', 'HOME')}
+              >
+                <Icon name="client" size="md" />
+                <span>
+                  <strong>Home visit</strong>
+                  <small>
+                    +{shop.currency_symbol} {shop.home_visit_fee}
+                  </small>
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+        {fields.location_type === 'HOME' && (
+          <Input
+            name="home_address"
+            label="Service address"
+            type="text"
+            maxLength={255}
+            required
+            helperText="Include your area and a clear landmark."
+          />
+        )}
+        <Input
+          name="notes"
+          label="Notes for your barber"
+          type="text"
+          maxLength={500}
+          helperText="Optional: access details or haircut preferences."
+        />
+      </div>
     );
   };
 
@@ -299,7 +608,7 @@ function ClientAppointments() {
       <div className={styles.confirmation}>
         <div className={styles.confirmRow}>
           <div className={styles.confirmBlock}>
-            <Icon name="barber" size="ty" black />
+            <Icon name="barber" size="ty" />
             <span className={styles.confirmLabel}>Barber:</span>
           </div>
           <div className={styles.confirmContent}>
@@ -307,7 +616,7 @@ function ClientAppointments() {
               {loadingBarbers ? (
                 <Spinner size="sm" />
               ) : selectedBarber ? (
-                `(${selectedBarber.username}) ${selectedBarber.name} ${selectedBarber.surname}`
+                `${selectedBarber.name || ''} ${selectedBarber.surname || ''}`.trim() || 'Your barber'
               ) : fields.barber_id ? (
                 fields.barber_id
               ) : (
@@ -319,7 +628,7 @@ function ClientAppointments() {
 
         <div className={styles.confirmRow}>
           <div className={styles.confirmBlock}>
-            <Icon name="service" size="ty" black />
+            <Icon name="service" size="ty" />
             <span className={styles.confirmLabel}>Services:</span>
           </div>
           <div className={styles.confirmContent}>
@@ -339,21 +648,35 @@ function ClientAppointments() {
 
         <div className={styles.confirmRow}>
           <div className={styles.confirmBlock}>
-            <Icon name="calendar" size="ty" black />
+            <Icon name="calendar" size="ty" />
             <span className={styles.confirmLabel}>Date:</span>
           </div>
           <div className={styles.confirmContent}>
-            <div className={styles.confirmValue}>{fields.date || '-'}</div>
+            <div className={styles.confirmValue}>
+              {formatBookingDate(fields.date, { weekday: 'long', month: 'long', day: 'numeric' }) || '-'}
+            </div>
           </div>
         </div>
 
         <div className={styles.confirmRow}>
           <div className={styles.confirmBlock}>
-            <Icon name="availability" size="ty" black />
+            <Icon name="availability" size="ty" />
             <span className={styles.confirmLabel}>Slot:</span>
           </div>
           <div className={styles.confirmContent}>
-            <div className={styles.confirmValue}>{fields.slot || '-'}</div>
+            <div className={styles.confirmValue}>{formatTime(fields.slot) || '-'}</div>
+          </div>
+        </div>
+
+        <div className={styles.confirmRow}>
+          <div className={styles.confirmBlock}>
+            <Icon name="client" size="ty" />
+            <span className={styles.confirmLabel}>Location:</span>
+          </div>
+          <div className={styles.confirmContent}>
+            <div className={styles.confirmValue}>
+              {fields.location_type === 'HOME' ? fields.home_address || 'Home visit' : 'Barbershop'}
+            </div>
           </div>
         </div>
       </div>
@@ -364,208 +687,179 @@ function ClientAppointments() {
 
   return (
     <>
-      <Pagination
-        className={styles.clientAppointments}
-        icon="appointment"
-        label="Appointments"
-        itemsPerPage={7}
-        loading={isLoadingAppointments}
-        emptyMessage="No appointments found." //
-      >
-        <Pagination.Action>
-          <div className={styles.action}>
+      <div className={styles.appointmentsPage}>
+        <header className={styles.pageHeader}>
+          <div>
+            <span className={styles.eyebrow}>Your schedule</span>
+            <h1>Appointments</h1>
+            <p>Book again, reschedule or cancel from one place.</p>
+          </div>
+          <div className={styles.headerActions}>
             <Button
               className={styles.refreshBtn}
               type="button"
               color="primary"
               size="md"
               onClick={fetchAppointments}
-              disabled={isLoadingAppointments} //
+              disabled={isLoadingAppointments}
+              aria-label="Refresh appointments"
             >
-              <span className={styles.line}>
-                {isLoadingAppointments ? (
-                  <>
-                    <Spinner size="sm" /> Refreshing...
-                  </>
-                ) : (
-                  <>
-                    <Icon name="refresh" size="ty" /> Refresh appointments
-                  </>
-                )}
-              </span>
+              {isLoadingAppointments ? <Spinner size="sm" /> : <Icon name="refresh" size="sm" />}
+              <span>Refresh</span>
             </Button>
-
-            <Button
-              className={styles.actionBtn}
-              type="button"
-              color="primary"
-              size="md"
-              onClick={openBookPopup} //
-            >
-              <Icon name="plus" size="ty" />
-              <span>Book appointment</span>
+            <Button className={styles.actionBtn} type="button" color="gold" size="md" onClick={openBookPopup}>
+              <Icon name="plus" size="sm" />
+              <span>New booking</span>
             </Button>
           </div>
-        </Pagination.Action>
+        </header>
 
-        {/* Table headers */}
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="barber" size="ty" black />
-            <span className={styles.tableTitleName}>Barber</span>
+        {isLoadingAppointments && appointments.length === 0 ? (
+          <div className={styles.loadingState}>
+            <Spinner />
+            <span>Loading your appointments…</span>
           </div>
-        </Pagination.Column>
+        ) : appointments.length === 0 ? (
+          <section className={styles.emptyState}>
+            <span className={styles.emptyIcon}>
+              <Icon name="calendar" size="lg" />
+            </span>
+            <h2>No appointments yet</h2>
+            <p>Your first booking takes only a few taps.</p>
+            <Button type="button" color="gold" size="lg" onClick={openBookPopup}>
+              Book your first visit
+            </Button>
+          </section>
+        ) : (
+          <section className={styles.appointmentList} aria-label="Your appointments">
+            {appointments.map((appointment) => {
+              const isActive = ['ONGOING', 'IN_PROGRESS'].includes(appointment.status);
+              return (
+                <article className={`${styles.appointmentCard} ${isActive ? styles.activeAppointment : ''}`} key={appointment.id}>
+                  <div className={styles.cardHeader}>
+                    <Profile profile={barbers[appointment.barber_id]} loading={isLoadingBarberProfiles} />
+                    <Tag
+                      className={styles.statusTag}
+                      color={appointment.status === 'COMPLETED' ? 'green' : isActive ? 'yellow' : 'red'}
+                    >
+                      {getClientStatusLabel(appointment.status, appointment.date)}
+                    </Tag>
+                  </div>
 
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="calendar" size="ty" black />
-            <span className={styles.tableTitleName}>Date</span>
-          </div>
-        </Pagination.Column>
+                  <div className={styles.scheduleBlock}>
+                    <div className={styles.dateBadge}>
+                      <strong>{new Date(`${appointment.date}T12:00:00`).getDate()}</strong>
+                      <span>{formatDate(appointment.date, { month: 'short' })}</span>
+                    </div>
+                    <div>
+                      <h2>{formatDate(appointment.date, { weekday: 'long', month: 'long', day: 'numeric' })}</h2>
+                      <p>
+                        {formatTimeRange(appointment.slot, appointment.end_time)} ·{' '}
+                        {appointment.location_type === 'HOME' ? 'Home visit' : shop.name}
+                      </p>
+                    </div>
+                  </div>
 
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="revenue" size="ty" black />
-            <span className={styles.tableTitleName}>Spent</span>
-          </div>
-        </Pagination.Column>
+                  <div className={styles.appointmentMeta}>
+                    <div>
+                      <span>Service</span>
+                      <strong>{appointment.services.map((service) => service.name).join(', ') || 'Barber appointment'}</strong>
+                    </div>
+                    <div>
+                      <span>Total</span>
+                      <strong>
+                        {shop.currency_symbol} {Number(appointment.amount_spent).toFixed(0)}
+                      </strong>
+                    </div>
+                  </div>
 
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="service" size="ty" black />
-            <span className={styles.tableTitleName}>Services</span>
-          </div>
-        </Pagination.Column>
-
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="email_base" size="ty" black />
-            <span className={styles.tableTitleName}>Reminder</span>
-          </div>
-        </Pagination.Column>
-
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="spinner" size="ty" black />
-            <span className={styles.tableTitleName}>Status</span>
-          </div>
-        </Pagination.Column>
-
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="dial" size="ty" black />
-            <span className={styles.tableTitleName}>Actions</span>
-          </div>
-        </Pagination.Column>
-
-        {/* Table rows */}
-        {appointments.map((appointment) => (
-          <Pagination.Row key={appointment.id}>
-            <Pagination.Cell>
-              <Profile profile={barbers[appointment.barber_id]} loading={isLoadingBarberProfiles} />
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <div className={styles.dateContainer}>
-                <div className={styles.date}>
-                  <span className={styles.date}>{appointment.date.replaceAll('-', ' / ')}</span>
-                  <span className={styles.slot}>( {appointment.slot} )</span>
-                </div>
-              </div>
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <div className={styles.amountSpent}>
-                <span className={styles.amount}>${appointment.amount_spent}</span>
-              </div>
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <span className={styles.services}>{appointment.services.map((service) => service.name).join(', ')}</span>
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <Tag className={styles.reminderTag} color={appointment.reminder_email_sent ? 'blue' : 'yellow'}>
-                {appointment.reminder_email_sent ? 'Sent' : 'Not Sent'}
-              </Tag>
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <Tag
-                className={styles.statusTag}
-                color={appointment.status === 'COMPLETED' ? 'green' : appointment.status === 'ONGOING' ? 'yellow' : 'red'}
-              >
-                {appointment.status.charAt(0) + appointment.status.slice(1).toLowerCase()}
-              </Tag>
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <div className={styles.actions}>
-                <Button
-                  type="button"
-                  size="sm"
-                  color="animated"
-                  disabled={appointment.status !== 'ONGOING'}
-                  onClick={() => openCancelPopup(appointment)} //
-                >
-                  <Icon name="trash" size="ty" black />
-                </Button>
-              </div>
-            </Pagination.Cell>
-          </Pagination.Row>
-        ))}
-      </Pagination>
+                  <div className={styles.cardActions}>
+                    {appointment.can_modify ? (
+                      <>
+                        <Button type="button" size="md" color="goldoutline" onClick={() => openReschedulePopup(appointment)}>
+                          <Icon name="pen" size="sm" />
+                          Reschedule
+                        </Button>
+                        <Button type="button" size="md" color="translight" onClick={() => openCancelPopup(appointment)}>
+                          <Icon name="trash" size="sm" />
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <Button type="button" size="md" color="goldoutline" onClick={() => openRebookPopup(appointment)}>
+                        <Icon name="refresh" size="sm" />
+                        Book again
+                      </Button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+        )}
+      </div>
 
       {/* Book Appointment Modal */}
       <Modal
         open={bookPopup}
         fields={bookFields}
-        initialStepIndex={bookFields.barber_id ? 1 : 0}
-        action={{ submit: 'Book', loading: 'Booking...' }}
+        wide
+        action={{ submit: 'Confirm booking', loading: 'Booking...' }}
         onSubmit={handleBookAppointment}
         onClose={closeBookPopup}
       >
-        {/* STEP 1: Select Barber */}
-        <Modal.Step validate={(fields) => (!fields.barber_id ? 'You must select a barber.' : undefined)}>
-          <Modal.Title icon="barber">Choose Barber</Modal.Title>
-          <Modal.Description>Please choose the barber you want to book.</Modal.Description>
-
-          <Input
-            type="dropdown"
-            size="md"
-            name="barber_id"
-            label="Barber"
-            fetcher={fetchBarbers}
-            mapOption={(barber) => ({ key: barber.id, value: `(${barber.username}) ${barber.name} ${barber.surname}` })}
-            required //
-          />
-        </Modal.Step>
-
-        {/* STEP 2: Select Services */}
         <Modal.Step
           validate={(fields) =>
-            !fields.services || fields.services.length === 0 ? 'You must select at least one service.' : undefined
+            !fields.barber_id
+              ? 'Choose a barber.'
+              : !fields.services || fields.services.length === 0
+                ? 'Choose at least one service.'
+                : undefined
           }
         >
-          <Modal.Title icon="service">Choose Services</Modal.Title>
-          <Modal.Description>Select one or more services offered by your selected barber.</Modal.Description>
-          <ServiceSelect />
+          <Modal.Title icon="scissors">Choose your look</Modal.Title>
+          <Modal.Description>Pick a barber and the exact service you want from the visual menu.</Modal.Description>
+          <VisualBarberServiceSelect />
         </Modal.Step>
 
-        {/* STEP 3: Select Date & Time slot */}
-        <Modal.Step validate={(fields) => (!fields.date || !fields.slot ? 'Please select date and time slot.' : undefined)}>
-          <Modal.Title icon="calendar">Choose Date & Time</Modal.Title>
-          <Modal.Description>Select an available date and time slot. Only available slots are shown.</Modal.Description>
-          <DateSlotSelect />
+        <Modal.Step
+          validate={(fields) =>
+            !fields.date || !fields.slot
+              ? 'Choose an available date and time.'
+              : fields.location_type === 'HOME' && !fields.home_address?.trim()
+                ? 'Enter the address for your home visit.'
+                : undefined
+          }
+        >
+          <Modal.Title icon="calendar">When & where</Modal.Title>
+          <Modal.Description>Choose a day, an AM/PM time, and your appointment location.</Modal.Description>
+          <ScheduleLocationSelect />
         </Modal.Step>
 
-        {/* STEP 4: Confirmation */}
+        {/* Final confirmation */}
         <Modal.Step>
           <Modal.Title icon="check">Confirm</Modal.Title>
           <Modal.Description>
             <ConfirmationStep />
           </Modal.Description>
         </Modal.Step>
+      </Modal>
+
+      <Modal
+        open={reschedulePopup.open}
+        fields={{
+          barber_id: reschedulePopup.appointment?.barber_id || '',
+          date: '',
+          slot: '',
+        }}
+        action={{ submit: 'Reschedule', loading: 'Rescheduling...' }}
+        onValidate={(fields) => (!fields.date || !fields.slot ? 'Choose a new date and time.' : undefined)}
+        onSubmit={(fields) => handleRescheduleAppointment(reschedulePopup.appointment?.id, fields)}
+        onClose={closeReschedulePopup}
+      >
+        <Modal.Title icon="calendar">Reschedule Appointment</Modal.Title>
+        <Modal.Description>Choose another available date and time with the same barber.</Modal.Description>
+        <DateSlotSelect />
       </Modal>
 
       {/* Cancel Appointment Modal */}

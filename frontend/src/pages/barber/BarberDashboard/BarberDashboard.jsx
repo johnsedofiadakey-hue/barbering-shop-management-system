@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@hooks/useAuth';
+import { useShopSettings } from '@hooks/useShopSettings';
 import styles from './BarberDashboard.module.scss';
 import api from '@api';
+import { formatTime } from '@utils/dateTime';
 
 import Icon from '@components/common/Icon/Icon';
 import StatCard from '@components/ui/StatCard/StatCard';
@@ -13,6 +15,7 @@ import Profile from '@components/ui/Profile/Profile';
 
 function BarberDashboard() {
   const { profile, setProfile } = useAuth();
+  const shop = useShopSettings();
 
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoadingClientProfiles, setIsLoadingClientProfiles] = useState(true);
@@ -95,7 +98,7 @@ function BarberDashboard() {
     <div className={styles.barberDashboard}>
       {/* Total Revenue */}
       <StatCard icon="revenue" label="Total Revenue">
-        <span className={styles.value}>{`$${profile.total_revenue}`}</span>
+        <span className={styles.value}>{`${shop.currency_symbol} ${profile.total_revenue}`}</span>
       </StatCard>
 
       {/* Completed Appointments */}
@@ -124,28 +127,28 @@ function BarberDashboard() {
         {/* Table headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="client" size="ty" black />
+            <Icon name="client" size="ty" />
             <span className={styles.tableTitleName}>Client</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="calendar" size="ty" black />
+            <Icon name="calendar" size="ty" />
             <span className={styles.tableTitleName}>Date</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="revenue" size="ty" black />
+            <Icon name="revenue" size="ty" />
             <span className={styles.tableTitleName}>Spent</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="service" size="ty" black />
+            <Icon name="service" size="ty" />
             <span className={styles.tableTitleName}>Services</span>
           </div>
         </Pagination.Column>
@@ -161,14 +164,16 @@ function BarberDashboard() {
               <div className={styles.dateContainer}>
                 <div className={styles.date}>
                   <span className={styles.date}>{appointment.date.replaceAll('-', ' / ')}</span>
-                  <span className={styles.slot}>( {appointment.slot} )</span>
+                  <span className={styles.slot}>( {formatTime(appointment.slot)} )</span>
                 </div>
               </div>
             </Pagination.Cell>
 
             <Pagination.Cell>
               <div className={styles.amountSpent}>
-                <span className={styles.amount}>${appointment.amount_spent}</span>
+                <span className={styles.amount}>
+                  {shop.currency_symbol} {appointment.amount_spent}
+                </span>
               </div>
             </Pagination.Cell>
 
@@ -193,28 +198,28 @@ function BarberDashboard() {
         {/* Table headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="client" size="ty" black />
+            <Icon name="client" size="ty" />
             <span className={styles.tableTitleName}>Client</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="rating" size="ty" black />
+            <Icon name="rating" size="ty" />
             <span className={styles.tableTitleName}>Rating</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="comment" size="ty" black />
+            <Icon name="comment" size="ty" />
             <span className={styles.tableTitleName}>Comment</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="date" size="ty" black />
+            <Icon name="date" size="ty" />
             <span className={styles.tableTitleName}>Date</span>
           </div>
         </Pagination.Column>

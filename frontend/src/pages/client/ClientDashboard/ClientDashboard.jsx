@@ -1,253 +1,267 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@hooks/useAuth';
+import { useShopSettings } from '@hooks/useShopSettings';
 import styles from './ClientDashboard.module.scss';
 import api from '@api';
+import { formatTime } from '@utils/dateTime';
 
+import Button from '@components/common/Button/Button';
 import Icon from '@components/common/Icon/Icon';
-import StatCard from '@components/ui/StatCard/StatCard';
-import Pagination from '@components/common/Pagination/Pagination';
 import Rating from '@components/ui/Rating/Rating';
 import Spinner from '@components/common/Spinner/Spinner';
-import Profile from '@components/ui/Profile/Profile';
+import ProfileImage from '@components/ui/ProfileImage/ProfileImage';
+
+const formatDate = (value, options = { weekday: 'short', month: 'short', day: 'numeric' }) =>
+  value ? new Intl.DateTimeFormat('en-GH', options).format(new Date(`${value}T12:00:00`)) : '';
 
 function ClientDashboard() {
   const { profile, setProfile } = useAuth();
+  const shop = useShopSettings();
+  const [barbers, setBarbers] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isLoadingBarberProfiles, setIsLoadingBarberProfiles] = useState(true);
-
-  const [barbers, setBarbers] = useState({}); // barberId -> profile
-
-  /**
-   * Defines fetching all barber profiles needed for reviews  and appointments (only unique barber IDs)
-   */
-  const fetchBarberProfiles = useCallback(
-    async (latest_reviews = [], recent_appointments = []) => {
-      setIsLoadingBarberProfiles(true);
-
-      try {
-        const reviewBarberIds = (latest_reviews || []).map((r) => r.barber_id); // Get barbers from reviews
-        const appointmentBarberIds = (recent_appointments || []).map((a) => a.barber_id); // Get barbers from appointments
-        const allBarberIds = Array.from(new Set([...reviewBarberIds, ...appointmentBarberIds])); // Combine both
-
-        // Only fetch the barbers that aren't in our barbers cache yet
-        const barberIdsToFetch = allBarberIds.filter((id) => !(id in barbers));
-
-        if (barberIdsToFetch.length === 0) {
-          setIsLoadingBarberProfiles(false);
-          return;
-        }
-
-        const entries = await Promise.all(
-          barberIdsToFetch.map(async (id) => {
-            try {
-              const { profile } = await api.pub.getBarberProfilePublic(id);
-              return [id, profile];
-            } catch {
-              return [id, null];
-            }
-          }),
-        );
-
-        setBarbers((prev) => ({ ...prev, ...Object.fromEntries(entries) })); // includes barbers in deps to always know which barber ids are loaded
-      } finally {
-        setIsLoadingBarberProfiles(false);
-      }
-    },
-    [barbers],
-  );
-
-  /**
-   * Defines fetching latest profile data
-   */
   const fetchProfile = useCallback(async () => {
-    setIsLoadingProfile(true);
-
+    setIsLoading(true);
     try {
-      const { profile } = await api.client.getClientProfile();
-      setProfile(profile);
+      const { profile: latestProfile } = await api.client.getClientProfile();
+      setProfile(latestProfile);
     } finally {
-      setIsLoadingProfile(false);
+      setIsLoading(false);
     }
   }, [setProfile]);
 
-  /**
-   *  Fetches on mount to keep profile data always up to date
-   */
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
 
-  /**
-   * Only run when reviews or recent appointments change
-   */
   useEffect(() => {
-    if (profile?.latest_reviews || profile?.recent_appointments) {
-      fetchBarberProfiles(profile?.latest_reviews, profile?.recent_appointments);
-    }
-  }, [profile?.latest_reviews, profile?.recent_appointments, fetchBarberProfiles]);
+    if (!profile) return;
+    const ids = new Set([
+      ...(profile.recent_appointments || []).map((appointment) => appointment.barber_id),
+      ...(profile.latest_reviews || []).map((review) => review.barber_id),
+      profile.upcoming_appointment?.barber_id,
+    ]);
+    ids.delete(undefined);
+    ids.delete(null);
 
-  // While fetching latest profile data show loading spinner
-  if (isLoadingProfile) return <Spinner />;
+    Promise.all(
+      [...ids].map(async (id) => {
+        try {
+          const { profile: barber } = await api.pub.getBarberProfilePublic(id);
+          return [id, barber];
+        } catch {
+          return [id, null];
+        }
+      }),
+    ).then((entries) => setBarbers(Object.fromEntries(entries)));
+  }, [profile]);
+
+  if (isLoading || !profile) return <Spinner />;
+
+  const upcoming = profile.upcoming_appointment;
+  const firstName = profile.name?.trim() || 'there';
+
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+  const recentAppointments = profile.recent_appointments || [];
+  const lastCompleted = recentAppointments.find((appointment) => appointment.status === 'COMPLETED');
+  const reviewedBarberIds = new Set((profile.latest_reviews || []).map((review) => review.barber_id));
+  const pendingReviewAppointment = lastCompleted && !reviewedBarberIds.has(lastCompleted.barber_id) ? lastCompleted : null;
 
   return (
-    <div className={styles.clientDashboard}>
-      {/* Upcoming Appointment */}
-      <StatCard icon="availability" label="Upcoming Appointment">
-        {profile.upcoming_appointment ? (
-          <div className={styles.upcomingAppointmentValue}>
-            <span className={styles.upcomingAppointmentSlot}>{profile.upcoming_appointment?.slot}</span>
-            <span className={styles.upcomingAppointmentDate}>{profile.upcoming_appointment?.date.replaceAll('-', ' / ')}</span>
+    <div className={styles.dashboard}>
+      <section className={styles.welcomeCard}>
+        <div className={styles.welcomeCopy}>
+          <span className={styles.eyebrow}>Your grooming app</span>
+          <h1>
+            {timeGreeting}, {firstName}.
+          </h1>
+          <p>Your bookings, barber and history stay connected to this phone.</p>
+          <div className={styles.sessionNote}>
+            <Icon name="check" size="sm" />
+            Signed in on this device until you log out
+          </div>
+        </div>
+        <Button className={styles.primaryCta} href="/client/appointments?book=1" size="lg" color="gold">
+          <Icon name="calendar" size="sm" />
+          Book a cut
+        </Button>
+      </section>
+
+      <section className={`${styles.nextCard} ${upcoming ? styles.hasAppointment : styles.noAppointment}`}>
+        <div className={styles.sectionLabel}>
+          <span>Next appointment</span>
+          {upcoming && <span className={styles.status}>Confirmed</span>}
+        </div>
+
+        {upcoming ? (
+          <>
+            <div className={styles.nextMain}>
+              <div className={styles.dateBadge}>
+                <strong>{new Date(`${upcoming.date}T12:00:00`).getDate()}</strong>
+                <span>{formatDate(upcoming.date, { month: 'short' })}</span>
+              </div>
+              <div className={styles.nextDetails}>
+                <h2>{formatDate(upcoming.date, { weekday: 'long', month: 'long', day: 'numeric' })}</h2>
+                <p>
+                  {formatTime(upcoming.slot)} · {upcoming.location_type === 'HOME' ? 'Home visit' : shop.name}
+                </p>
+                {barbers[upcoming.barber_id] && (
+                  <div className={styles.barberMini}>
+                    <ProfileImage src={barbers[upcoming.barber_id].profile_image} />
+                    <span>
+                      {barbers[upcoming.barber_id].name} {barbers[upcoming.barber_id].surname}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <Button href="/client/appointments" size="md" color="goldoutline" wide>
+              View or reschedule
+            </Button>
+          </>
+        ) : lastCompleted ? (
+          <div className={styles.emptyNext}>
+            <span className={styles.emptyIcon}>
+              <Icon name="refresh" size="lg" />
+            </span>
+            <div>
+              <h2>Ready for your usual?</h2>
+              <p>
+                {lastCompleted.services.map((service) => service.name).join(', ') || 'Your last visit'}
+                {barbers[lastCompleted.barber_id] &&
+                  ` with ${barbers[lastCompleted.barber_id].name} ${barbers[lastCompleted.barber_id].surname}`}
+              </p>
+            </div>
+            <Button href={`/client/appointments?bookBarber=${lastCompleted.barber_id}`} color="goldoutline" size="md">
+              Find next available time
+            </Button>
           </div>
         ) : (
-          <span className={styles.empty}>No future appointment</span>
+          <div className={styles.emptyNext}>
+            <span className={styles.emptyIcon}>
+              <Icon name="scissors" size="lg" />
+            </span>
+            <div>
+              <h2>Your chair is ready when you are.</h2>
+              <p>Choose a barber and reserve a time in a few taps.</p>
+            </div>
+            <Button href="/client/appointments?book=1" color="goldoutline" size="md">
+              Book now
+            </Button>
+          </div>
         )}
-      </StatCard>
+      </section>
 
-      {/* Total Appointments */}
-      <StatCard icon="calendar" label="Total Appointments">
-        <span className={styles.value}>{profile.total_appointments}</span>
-      </StatCard>
+      <nav className={styles.quickActions} aria-label="Quick actions">
+        <Button href="/client/appointments?book=1" color="primary" size="md">
+          <span className={styles.actionIcon}>
+            <Icon name="plus" size="md" />
+          </span>
+          <span>
+            <strong>New booking</strong>
+            <small>Choose a service</small>
+          </span>
+        </Button>
+        <Button href="/client/appointments" color="primary" size="md">
+          <span className={styles.actionIcon}>
+            <Icon name="appointment" size="md" />
+          </span>
+          <span>
+            <strong>Appointments</strong>
+            <small>Manage your visits</small>
+          </span>
+        </Button>
+        <Button href="/client/settings" color="primary" size="md">
+          <span className={styles.actionIcon}>
+            <Icon name="user" size="md" />
+          </span>
+          <span>
+            <strong>My account</strong>
+            <small>Details and logout</small>
+          </span>
+        </Button>
+      </nav>
 
-      {/* Completed Appointments */}
-      <StatCard icon="completed" label="Completed Appointments">
-        <span className={styles.value}>{profile.completed_appointments}</span>
-      </StatCard>
-
-      {/* Recent Appointments */}
-      <Pagination
-        icon="date"
-        label="Recent Appointments"
-        itemsPerPage={5}
-        emptyMessage="No appointments found." //
-      >
-        <Pagination.Action>
-          <div className={styles.action}></div>
-        </Pagination.Action>
-
-        {/* Table headers */}
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="client" size="ty" black />
-            <span className={styles.tableTitleName}>Barber</span>
+      <section className={styles.historySection}>
+        <div className={styles.sectionHeading}>
+          <div>
+            <span className={styles.eyebrow}>Your history</span>
+            <h2>Recent appointments</h2>
           </div>
-        </Pagination.Column>
+          <Button href="/client/appointments" color="link" size="sm">
+            See all
+          </Button>
+        </div>
 
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="calendar" size="ty" black />
-            <span className={styles.tableTitleName}>Date</span>
+        {(profile.recent_appointments || []).length > 0 ? (
+          <div className={styles.historyList}>
+            {profile.recent_appointments.slice(0, 3).map((appointment) => {
+              const barber = barbers[appointment.barber_id];
+              return (
+                <article className={styles.historyItem} key={appointment.id}>
+                  <div className={styles.historyDate}>
+                    <strong>{new Date(`${appointment.date}T12:00:00`).getDate()}</strong>
+                    <span>{formatDate(appointment.date, { month: 'short' })}</span>
+                  </div>
+                  <div className={styles.historyDetails}>
+                    <strong>{appointment.services.map((service) => service.name).join(', ') || 'Barber appointment'}</strong>
+                    <span>
+                      {barber ? `${barber.name} ${barber.surname}` : 'Your barber'} · {formatTime(appointment.slot)}
+                    </span>
+                  </div>
+                  <span className={styles.historyPrice}>
+                    {shop.currency_symbol} {Number(appointment.amount_spent).toFixed(0)}
+                  </span>
+                </article>
+              );
+            })}
           </div>
-        </Pagination.Column>
+        ) : (
+          <div className={styles.emptyList}>Your completed visits will appear here.</div>
+        )}
+      </section>
 
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="revenue" size="ty" black />
-            <span className={styles.tableTitleName}>Spent</span>
+      {pendingReviewAppointment && (
+        <section className={styles.reviewPrompt}>
+          <div>
+            <h2>
+              How was your appointment with{' '}
+              {barbers[pendingReviewAppointment.barber_id]
+                ? `${barbers[pendingReviewAppointment.barber_id].name} ${barbers[pendingReviewAppointment.barber_id].surname}`
+                : 'your barber'}
+              ?
+            </h2>
+            <p>Your feedback helps other clients pick the right barber.</p>
           </div>
-        </Pagination.Column>
+          <Button href={`/client/reviews?reviewBarber=${pendingReviewAppointment.barber_id}`} color="gold" size="md">
+            <Icon name="review" size="sm" />
+            Leave a review
+          </Button>
+        </section>
+      )}
 
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="service" size="ty" black />
-            <span className={styles.tableTitleName}>Services</span>
+      {(profile.latest_reviews || []).length > 0 && (
+        <section className={styles.reviewSection}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.eyebrow}>Your feedback</span>
+              <h2>Latest review</h2>
+            </div>
+            <Button href="/client/reviews" color="link" size="sm">
+              Manage reviews
+            </Button>
           </div>
-        </Pagination.Column>
-
-        {/* Table rows */}
-        {profile.recent_appointments.map((appointment) => (
-          <Pagination.Row key={appointment.id}>
-            <Pagination.Cell>
-              <Profile profile={barbers[appointment.barber_id]} loading={isLoadingBarberProfiles} />
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <div className={styles.dateContainer}>
-                <div className={styles.date}>
-                  <span className={styles.date}>{appointment.date.replaceAll('-', ' / ')}</span>
-                  <span className={styles.slot}>( {appointment.slot} )</span>
-                </div>
-              </div>
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <div className={styles.amountSpent}>
-                <span className={styles.amount}>${appointment.amount_spent}</span>
-              </div>
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <span className={styles.services}>{appointment.services.map((service) => service.name).join(', ')}</span>
-            </Pagination.Cell>
-          </Pagination.Row>
-        ))}
-      </Pagination>
-
-      {/* Latest Reviews */}
-      <Pagination
-        icon="review"
-        label="Latest Reviews"
-        itemsPerPage={5}
-        emptyMessage="No reviews yet" //
-      >
-        <Pagination.Action>
-          <div className={styles.action}></div>
-        </Pagination.Action>
-
-        {/* Table headers */}
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="barber" size="ty" black />
-            <span className={styles.tableTitleName}>Barber</span>
-          </div>
-        </Pagination.Column>
-
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="rating" size="ty" black />
-            <span className={styles.tableTitleName}>Rating</span>
-          </div>
-        </Pagination.Column>
-
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="comment" size="ty" black />
-            <span className={styles.tableTitleName}>Comment</span>
-          </div>
-        </Pagination.Column>
-
-        <Pagination.Column>
-          <div className={styles.tableTitle}>
-            <Icon name="date" size="ty" black />
-            <span className={styles.tableTitleName}>Date</span>
-          </div>
-        </Pagination.Column>
-
-        {/* Table rows */}
-        {profile.latest_reviews.map((review) => (
-          <Pagination.Row key={review.id}>
-            <Pagination.Cell>
-              <Profile profile={barbers[review.barber_id]} loading={isLoadingBarberProfiles} />
-            </Pagination.Cell>
-
-            <Pagination.Cell>
+          {profile.latest_reviews.slice(0, 1).map((review) => (
+            <article className={styles.reviewCard} key={review.id}>
               <Rating rating={review.rating} />
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <div className={styles.reviewComment}>
-                <span className={styles.comment}>{review.comment}</span>
-              </div>
-            </Pagination.Cell>
-
-            <Pagination.Cell>
-              <div className={styles.reviewDate}>
-                <span className={styles.date}>{review.created_at.replaceAll('-', ' / ')}</span>
-              </div>
-            </Pagination.Cell>
-          </Pagination.Row>
-        ))}
-      </Pagination>
+              <p>{review.comment || 'No written comment.'}</p>
+              <span>{formatDate(review.created_at, { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+            </article>
+          ))}
+        </section>
+      )}
     </div>
   );
 }

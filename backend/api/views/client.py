@@ -13,6 +13,7 @@ from api.serializers.client import (
     GetClientAppointmentsSerializer,
     CreateClientAppointmentSerializer,
     CancelClientAppointmentSerializer,
+    RescheduleClientAppointmentSerializer,
     GetClientReviewsSerializer,
     CreateClientReviewSerializer,
     UpdateClientReviewSerializer,
@@ -109,13 +110,22 @@ def create_client_appointment(request, barber_id):
     responses={200: OpenApiResponse(description="Appointment cancelled successfully.")},
     description="Client only: Cancel an ongoing appointment for the authenticated client.",
 )
-@api_view(['DELETE'])
+@api_view(['PATCH', 'DELETE'])
 @permission_classes([IsClientRole])
 @parser_classes([JSONParser]) 
 def cancel_client_appointment(request, appointment_id):
     """
     Client only: Cancels an ONGOING appointment by setting it's status to CANCELLED, for the authenticated client.
     """
+    if request.method == 'PATCH':
+        serializer = RescheduleClientAppointmentSerializer(
+            data=request.data,
+            context={'client': request.user, 'appointment_id': appointment_id},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'detail': 'Appointment rescheduled successfully.'}, status=status.HTTP_200_OK)
+
     serializer = CancelClientAppointmentSerializer(data={}, context={'client': request.user, 'appointment_id': appointment_id})
     serializer.is_valid(raise_exception=True)
     serializer.save()

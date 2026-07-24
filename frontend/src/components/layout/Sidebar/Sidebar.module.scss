@@ -76,7 +76,7 @@ $sidebar-closed-width: 3.5rem;
         padding-block: 2rem;
         padding-left: 2rem;
         margin-bottom: 1rem;
-        border-bottom: 1px solid $color-lighter;
+        border-bottom: 1px solid $border-hair;
 
         .profile {
           border-radius: $border-radius;
@@ -92,14 +92,17 @@ $sidebar-closed-width: 3.5rem;
             gap: 0.2rem;
 
             .username {
-              font-size: 1.5rem;
+              font-size: 1.45rem;
               font-weight: 600;
             }
 
             .role {
-              font-size: 0.96rem;
-              font-weight: 400;
-              text-transform: capitalize;
+              font-size: 1.1rem;
+              font-weight: 500;
+              letter-spacing: 0.16em;
+              text-transform: uppercase;
+              color: #7d766a;
+              margin-top: 0.1rem;
             }
           }
         }
@@ -126,6 +129,11 @@ $sidebar-closed-width: 3.5rem;
               align-items: center;
               gap: 1rem;
             }
+
+            .nav-icon {
+              display: grid;
+              place-items: center;
+            }
           }
         }
       }
@@ -133,9 +141,148 @@ $sidebar-closed-width: 3.5rem;
   }
 }
 
-// Active nav button styling
+// Active nav button styling — !important guards against .borderless's own color rule
+// (both classes land on the same Button element with equal CSS specificity)
 .active {
-  background: $color-accent;
+  background: $color-accent !important;
+  color: $color-ink-on-gold !important;
   border-radius: $border-radius;
+  font-weight: 600;
   pointer-events: none;
+}
+
+@media (max-width: $bp-medium-small) {
+  .sidebar,
+  .sidebar.open,
+  .sidebar.close {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 50;
+    width: 100%;
+    height: calc(6.8rem + env(safe-area-inset-bottom));
+    border-top: 1px solid $border-panel;
+    border-right: 0;
+    background: rgba(14, 13, 12, 0.96);
+    box-shadow: 0 -1.2rem 3.6rem rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(18px);
+
+    .sidebar-content {
+      overflow: hidden;
+
+      .toggle-btn,
+      .top {
+        display: none;
+      }
+
+      .inner,
+      .inner.show,
+      .inner.hide {
+        width: 100%;
+        padding: 0 0 env(safe-area-inset-bottom);
+        overflow: visible;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .inner .nav {
+        width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+          display: none;
+        }
+
+        ul {
+          min-width: 100%;
+          width: max-content;
+          height: 6.8rem;
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: minmax(6.6rem, 1fr);
+
+          li {
+            margin: 0;
+
+            .nav-btn {
+              width: 100%;
+              height: 6.8rem;
+              min-width: 0;
+              padding: 0.6rem 0.5rem;
+              justify-content: center;
+              border-radius: 0;
+            }
+
+            .line {
+              flex-direction: column;
+              justify-content: center;
+              gap: 0.35rem;
+              font-size: 0.94rem;
+              line-height: 1.1;
+              white-space: nowrap;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .active {
+    border-radius: 0 !important;
+    box-shadow: inset 0 2px 0 $color-gold;
+  }
+
+  .client-sidebar {
+    height: calc(7.4rem + env(safe-area-inset-bottom));
+    border-top-color: rgba(197, 160, 89, 0.24);
+    background: rgba(13, 12, 11, 0.94);
+
+    .sidebar-content .inner .nav ul {
+      width: 100%;
+      height: 7.4rem;
+      grid-auto-flow: initial;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+
+      li .nav-btn {
+        height: 7.4rem;
+        padding: 0.8rem 0.2rem 0.55rem;
+        color: #918a7d;
+
+        .line {
+          gap: 0.3rem;
+          font-size: 0.88rem;
+          font-weight: 600;
+        }
+
+        .nav-icon {
+          width: 3.2rem;
+          height: 3.2rem;
+          border-radius: 1.1rem;
+          transition: 0.2s ease;
+        }
+      }
+
+      li .primary-nav .nav-icon {
+        background: $color-gold;
+        color: $color-ink-on-gold;
+        box-shadow: 0 0.8rem 2rem rgba(197, 160, 89, 0.22);
+      }
+    }
+
+    .active {
+      background: transparent !important;
+      color: $color-gold !important;
+      box-shadow: none;
+
+      .nav-icon {
+        background: rgba(197, 160, 89, 0.14);
+      }
+    }
+
+    .primary-nav.active .nav-icon {
+      background: $color-gold;
+      color: $color-ink-on-gold;
+    }
+  }
 }

@@ -1,53 +1,108 @@
+import logging
 from datetime import datetime, timedelta
-from django.utils import timezone
-from django.db.models import Q
+
 from celery import shared_task
-from .models import (
-    Appointment, 
-    AppointmentStatus,
-)
-from .utils import(
-    send_client_reminder_email,
-    send_barber_reminder_email,
-)
+from django.utils import timezone
+
+from .models import Appointment, AppointmentStatus, ShopSettings
+from .utils import send_barber_reminder_email
+from .utils.sms import send_booking_confirmation_sms, send_client_reminder_sms
+
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
 def complete_ongoing_appointments():
-    """
-    Background task that automaically marks ONGOING appointments to COMPLETE when they are due.
-    """
-    now = timezone.localtime(timezone.now())  # Italy time!
-    
-    date_today = now.date()
-    time_now = now.time()
+    """Move appointments through in-progress and completed using their real duration."""
 
-    # Only mark ONGOING as COMPLETE if (date < date_today) OR if (date == date_today AND slot <= time_now)
-    appointments = Appointment.objects.filter(status=AppointmentStatus.ONGOING.value).filter((Q(date__lt=date_today) | Q(date=date_today, slot__lte=time_now)))
+    now = timezone.localtime(timezone.now())
+    changed = 0
+    appointments = Appointment.objects.filter(
+        status__in=[AppointmentStatus.ONGOING.value, AppointmentStatus.IN_PROGRESS.value]
+    )
 
-    return appointments.update(status=AppointmentStatus.COMPLETED.value)
+    for appointment in appointments:
+        if now >= appointment.end_datetime:
+            appointment.status = AppointmentStatus.COMPLETED.value
+            appointment.save(update_fields=['status'])
+            changed += 1
+        elif now >= appointment.start_datetime and appointment.status == AppointmentStatus.ONGOING.value:
+            appointment.status = AppointmentStatus.IN_PROGRESS.value
+            appointment.save(update_fields=['status'])
+            changed += 1
+
+    return changed
+
+
+@shared_task
+def send_booking_confirmation(appointment_id):
+    """Send a booking or rescheduling confirmation without risking the booking transaction."""
+
+    try:
+        appointment = Appointment.objects.select_related('client', 'barber').get(pk=appointment_id)
+    except Appointment.DoesNotExist:
+        return False
+
+    try:
+        send_booking_confirmation_sms(
+            appointment.client.phone_number,
+            f'{appointment.barber.name} {appointment.barber.surname}',
+            appointment.date,
+            appointment.slot.strftime('%H:%M'),
+            appointment.location_type == 'HOME',
+        )
+        appointment.confirmation_sent_at = timezone.now()
+        appointment.notification_error = ''
+        appointment.save(update_fields=['confirmation_sent_at', 'notification_error'])
+        return True
+    except Exception as exc:  # Notification failure must never remove a valid booking.
+        logger.exception('Booking confirmation failed for appointment %s', appointment_id)
+        appointment.notification_error = str(exc)[:500]
+        appointment.save(update_fields=['notification_error'])
+        return False
 
 
 @shared_task
 def send_appointment_reminders():
-    """
-    Background task that automaically sends reminder emails for appointments 1 hour before they are due.
-    """
-    now = timezone.localtime(timezone.now())  # Italy time!
+    """Send the client an SMS reminder and the barber an email reminder."""
 
-    date_today = now.date()
-    time_hour_later = now + timedelta(hours=1)
-
-    # Only get appointments with ONGOING and COMPLETED status, for today, for which reminder not sent, whose datetime is within the next hour
-    statuses = [AppointmentStatus.ONGOING.value, AppointmentStatus.COMPLETED.value]
-    appointments = Appointment.objects.filter(status__in=statuses, reminder_email_sent=False, date=date_today)
+    now = timezone.localtime(timezone.now())
+    shop = ShopSettings.load()
+    reminder_limit = now + timedelta(minutes=shop.reminder_minutes)
+    sent = 0
+    appointments = Appointment.objects.select_related('client', 'barber').filter(
+        status=AppointmentStatus.ONGOING.value,
+        reminder_sent_at__isnull=True,
+        date=now.date(),
+    )
 
     for appointment in appointments:
-        appointment_date = timezone.make_aware(datetime.combine(appointment.date, appointment.slot), timezone.get_current_timezone())
-        
-        if (now - timedelta(minutes=10)) < appointment_date <= time_hour_later:
-            send_client_reminder_email(appointment.client, appointment.barber, appointment_date)
-            send_barber_reminder_email(appointment.barber, appointment.client, appointment_date)
-            
+        appointment_time = timezone.make_aware(
+            datetime.combine(appointment.date, appointment.slot),
+            timezone.get_current_timezone(),
+        )
+        if not (now < appointment_time <= reminder_limit):
+            continue
+
+        try:
+            send_client_reminder_sms(
+                appointment.client.phone_number,
+                f'{appointment.barber.name} {appointment.barber.surname}',
+                appointment_time,
+            )
+            if appointment.barber.email:
+                send_barber_reminder_email(appointment.barber, appointment.client, appointment_time)
+            appointment.reminder_sent_at = timezone.now()
             appointment.reminder_email_sent = True
-            appointment.save(update_fields=['reminder_email_sent'])
+            appointment.notification_error = ''
+            appointment.save(
+                update_fields=['reminder_sent_at', 'reminder_email_sent', 'notification_error']
+            )
+            sent += 1
+        except Exception as exc:
+            logger.exception('Appointment reminder failed for appointment %s', appointment.id)
+            appointment.notification_error = str(exc)[:500]
+            appointment.save(update_fields=['notification_error'])
+
+    return sent

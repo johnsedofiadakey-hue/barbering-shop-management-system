@@ -2,6 +2,7 @@ import datetime
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.models import (
     Barber,
@@ -22,7 +23,6 @@ class ClientProfileTest(APITestCase):
 
     def setUp(self):
         # Endpoint URLs
-        self.login_url = reverse("login_user")
         self.profile_url = reverse("manage_client_profile")
         self.appointments_url = reverse("get_client_appointments")
         self.reviews_url = reverse("get_client_reviews")
@@ -81,8 +81,7 @@ class ClientProfileTest(APITestCase):
         """
         Authenticate as the test client.
         """
-        resp = self.client.post(self.login_url, {"username": self.client_user.username, "password": self.client_password}, format="json")
-        token = resp.data["token"]["access_token"]
+        token = str(RefreshToken.for_user(self.client_user).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
 
@@ -90,8 +89,7 @@ class ClientProfileTest(APITestCase):
         """
         Authenticate as a test barber (not a client).
         """
-        resp = self.client.post(self.login_url, {"username": self.barber_user.username, "password": self.barber_password}, format="json")
-        token = resp.data["token"]["access_token"]
+        token = str(RefreshToken.for_user(self.barber_user).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
 
@@ -129,7 +127,7 @@ class ClientProfileTest(APITestCase):
         Client can update part(s) of their profile.
         """
         self.login_as_client()
-        patch = {"username": "newclientname", "name": "CName", "surname": "CSurname", "phone_number": "+15715550111"}
+        patch = {"username": "newclientname", "name": "CName", "surname": "CSurname"}
         resp = self.client.patch(self.profile_url, patch, format="json")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp.data["detail"], "Profile info updated successfully.")
@@ -137,7 +135,7 @@ class ClientProfileTest(APITestCase):
         self.assertEqual(self.client_user.username, patch["username"])
         self.assertEqual(self.client_user.name, patch["name"])
         self.assertEqual(self.client_user.surname, patch["surname"])
-        self.assertEqual(self.client_user.phone_number, patch["phone_number"])
+        self.assertEqual(self.client_user.phone_number, "+12025551234")
 
 
     def test_update_profile_username_unique_constraint(self):
@@ -161,14 +159,14 @@ class ClientProfileTest(APITestCase):
         self.assertIn("must provide at least one field", str(resp.data["detail"]))
 
 
-    def test_update_profile_phone_number_invalid(self):
+    def test_update_profile_phone_number_requires_reverification(self):
         """
-        Invalid phone number format is not accepted.
+        A client cannot silently move a verified account to another phone number.
         """
         self.login_as_client()
-        resp = self.client.patch(self.profile_url, {"phone_number": "123abc"}, format="json")
+        resp = self.client.patch(self.profile_url, {"phone_number": "+15715550111"}, format="json")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("phone number must be entered", str(resp.data["phone_number"][0]).lower())
+        self.assertIn("verified login", str(resp.data["phone_number"][0]).lower())
 
 
     def test_delete_profile_success(self):
@@ -236,7 +234,7 @@ class ClientProfileTest(APITestCase):
 
         Availability.objects.create(
             barber=self.barber_user, 
-            date=datetime.date.today(), 
+            date=datetime.date.today() + datetime.timedelta(days=1),
             slots=["09:00", "11:00"]
         )
 
@@ -245,7 +243,7 @@ class ClientProfileTest(APITestCase):
         url = reverse("create_client_appointment", kwargs={"barber_id": self.barber_user.id})
 
         data = {
-            "date": datetime.date.today(),
+            "date": datetime.date.today() + datetime.timedelta(days=1),
             "slot": "09:00",
             "services": [service_1.id, service_2.id],
         }
@@ -258,8 +256,63 @@ class ClientProfileTest(APITestCase):
         appointment = Appointment.objects.get(client=self.client_user)
 
         self.assertEqual(appointment.barber, self.barber_user)
-        self.assertEqual(str(appointment.date), str(datetime.date.today()))
+        self.assertEqual(str(appointment.date), str(datetime.date.today() + datetime.timedelta(days=1)))
         self.assertEqual([x.id for x in appointment.services.all()], [service_1.id, service_2.id])
+
+
+    def test_home_visit_applies_configured_travel_fee(self):
+        from api.models import ShopSettings
+
+        shop = ShopSettings.load()
+        shop.home_visits_enabled = True
+        shop.home_visit_fee = 45
+        shop.save()
+        service = Service.objects.create(barber=self.barber_user, name="Home cut", price=80, duration_minutes=30)
+        appointment_date = datetime.date.today() + datetime.timedelta(days=1)
+        Availability.objects.create(barber=self.barber_user, date=appointment_date, slots=["11:00"])
+        self.login_as_client()
+
+        response = self.client.post(
+            reverse("create_client_appointment", kwargs={"barber_id": self.barber_user.id}),
+            {
+                "date": appointment_date,
+                "slot": "11:00",
+                "services": [service.id],
+                "location_type": "HOME",
+                "home_address": "12 Independence Avenue",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        appointment = Appointment.objects.get(client=self.client_user, date=appointment_date)
+        self.assertEqual(str(appointment.travel_fee), "45.00")
+        self.assertEqual(appointment.location_type, "HOME")
+
+
+    def test_service_duration_prevents_overlapping_bookings(self):
+        long_service = Service.objects.create(barber=self.barber_user, name="Full service", price=100, duration_minutes=60)
+        short_service = Service.objects.create(barber=self.barber_user, name="Line-up", price=30, duration_minutes=30)
+        appointment_date = datetime.date.today() + datetime.timedelta(days=1)
+        Availability.objects.create(barber=self.barber_user, date=appointment_date, slots=["09:00", "09:30", "10:00"])
+        url = reverse("create_client_appointment", kwargs={"barber_id": self.barber_user.id})
+
+        self.client.force_authenticate(user=self.client_user)
+        first = self.client.post(
+            url,
+            {"date": appointment_date, "slot": "09:00", "services": [long_service.id]},
+            format="json",
+        )
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+
+        self.client.force_authenticate(user=self.client_user_other)
+        overlap = self.client.post(
+            url,
+            {"date": appointment_date, "slot": "09:30", "services": [short_service.id]},
+            format="json",
+        )
+        self.assertEqual(overlap.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("overlaps", str(overlap.data["detail"]).lower())
 
 
     def test_create_appointment_requires_barber_exists(self):
@@ -283,7 +336,7 @@ class ClientProfileTest(APITestCase):
         Rejects double bookings for same client/date or same barber/slot or ongoing.
         """
         service_1 = Service.objects.create(barber=self.barber_user, name="Cut", price=9)
-        today = datetime.date.today()
+        today = datetime.date.today() + datetime.timedelta(days=1)
         slot = datetime.time(9, 0)
         # Set available
         Availability.objects.create(barber=self.barber_user, date=today, slots=["09:00"])
@@ -313,7 +366,7 @@ class ClientProfileTest(APITestCase):
         # Should fail: client already has ONGOING appt
         resp = self.client.post(url, data, format="json")
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("already has an ONGOING appointment".lower(), str(resp.data["detail"]).lower())
+        self.assertIn("already exists", str(resp.data["detail"]).lower())
 
 
     def test_create_appointment_rejects_wrong_service(self):
@@ -326,7 +379,7 @@ class ClientProfileTest(APITestCase):
         )
         s_other = Service.objects.create(barber=their_barber, name="Wax", price=10)
         s_our = Service.objects.create(barber=self.barber_user, name="Buzz", price=9)
-        dt = datetime.date.today()
+        dt = datetime.date.today() + datetime.timedelta(days=1)
         Availability.objects.create(barber=self.barber_user, date=dt, slots=["13:00"])
         self.login_as_client()
         url = reverse("create_client_appointment", kwargs={"barber_id": self.barber_user.id})
@@ -345,7 +398,7 @@ class ClientProfileTest(APITestCase):
         Cannot create appointment if barber not available (no availability or slot missing).
         """
         s1 = Service.objects.create(barber=self.barber_user, name="Mass", price=8)
-        dt = datetime.date.today()
+        dt = datetime.date.today() + datetime.timedelta(days=1)
         # No Availability for barber
         self.login_as_client()
         url = reverse("create_client_appointment", kwargs={"barber_id": self.barber_user.id})
@@ -374,7 +427,7 @@ class ClientProfileTest(APITestCase):
         appt = Appointment.objects.create(
             client=self.client_user, 
             barber=self.barber_user,
-            date=datetime.date.today(), 
+            date=datetime.date.today() + datetime.timedelta(days=1),
             slot=datetime.time(8,0),
             status=AppointmentStatus.ONGOING.value
         )

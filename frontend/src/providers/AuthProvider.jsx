@@ -77,13 +77,13 @@ function AuthProvider({ children }) {
   }, [fetchProfile, handleLogout]);
 
   /**
-   * Handles login and sets everything up in context.
+   * Handles staff sign-in via a Firebase-linked identity (email + password).
    */
-  const login = async (credentials) => {
+  const loginWithFirebaseEmail = async (email, password) => {
     setIsLoggingIn(true);
 
     try {
-      await api.auth.login(credentials); // Any exceptions get catched in the login Form
+      await api.auth.loginWithFirebaseEmail(email, password); // Any exceptions get catched in the login Form
       await fetchProfile();
     } finally {
       setIsLoggingIn(false);
@@ -97,8 +97,9 @@ function AuthProvider({ children }) {
     setIsLoggingIn(true);
 
     try {
-      await api.auth.verifyOtp(phoneNumber, code); // Any exceptions get catched in the login Form
+      const session = await api.auth.verifyOtp(phoneNumber, code); // Any exceptions get catched in the login Form
       await fetchProfile();
+      return session;
     } finally {
       setIsLoggingIn(false);
     }
@@ -128,9 +129,9 @@ function AuthProvider({ children }) {
         isFetchingProfile, // passed to handle loading status
         setProfile, // to always set latest profile data
 
-        isLoggingIn, // only true during login() / loginWithOtp()
-        login,
+        isLoggingIn, // only true during loginWithOtp() / loginWithFirebaseEmail()
         loginWithOtp,
+        loginWithFirebaseEmail,
 
         isLoggingOut, // only true during logout()
         logout,

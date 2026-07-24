@@ -12,10 +12,18 @@ def _send_message(phone_number, body):
     - `settings.MESSAGE_CHANNEL == 'whatsapp'` sends via WhatsApp using the same Twilio API
       (numbers get the 'whatsapp:' prefix); default channel is plain SMS.
     """
-    if getattr(settings, 'SMS_BACKEND', 'twilio') == 'console':
+    backend = getattr(settings, 'SMS_BACKEND', 'twilio')
+
+    if backend == 'disabled':
+        raise RuntimeError('Appointment SMS provider is not configured.')
+
+    if backend == 'console':
         logger.info('[SMS console backend] to=%s body=%r', phone_number, body)
         print(f'[SMS console backend] to={phone_number} body={body!r}')
         return
+
+    if backend != 'twilio':
+        raise RuntimeError(f'Unsupported SMS backend: {backend}')
 
     from twilio.rest import Client as TwilioClient
 

@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@hooks/useAuth';
+import { useShopSettings } from '@hooks/useShopSettings';
 import styles from './BarberAppointments.module.scss';
 import api from '@api';
+import { formatTime } from '@utils/dateTime';
 
 import Pagination from '@components/common/Pagination/Pagination';
 import Icon from '@components/common/Icon/Icon';
@@ -9,15 +11,19 @@ import Tag from '@components/common/Tag/Tag';
 import Button from '@components/common/Button/Button';
 import Spinner from '@components/common/Spinner/Spinner';
 import Profile from '@components/ui/Profile/Profile';
+import Modal from '@components/common/Modal/Modal';
+import Input from '@components/common/Input/Input';
 
 function BarberAppointments() {
   const { profile } = useAuth();
+  const shop = useShopSettings();
   const [appointments, setAppointments] = useState([]);
 
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
   const [isLoadingClientProfiles, setIsLoadingClientProfiles] = useState(true);
 
   const [clients, setClients] = useState({}); // clientId -> profile
+  const [statusPopup, setStatusPopup] = useState({ open: false, appointment: null });
 
   /**
    * Defines fetching all appointmentts from api (single responsibility, outside effect)
@@ -79,6 +85,12 @@ function BarberAppointments() {
     }
   }, [appointments, fetchClientProfiles]);
 
+  const handleStatusUpdate = async ({ status }) => {
+    await api.barber.updateBarberAppointmentStatus(statusPopup.appointment?.id, status);
+    setStatusPopup({ open: false, appointment: null });
+    await fetchAppointments();
+  };
+
   // Only render UI for admins; otherwise, render nothing
   if (!profile || profile.role !== 'BARBER') return null;
 
@@ -119,43 +131,50 @@ function BarberAppointments() {
         {/* Table headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="client" size="ty" black />
+            <Icon name="client" size="ty" />
             <span className={styles.tableTitleName}>Client</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="calendar" size="ty" black />
+            <Icon name="calendar" size="ty" />
             <span className={styles.tableTitleName}>Date</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="revenue" size="ty" black />
+            <Icon name="revenue" size="ty" />
             <span className={styles.tableTitleName}>Spent</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="service" size="ty" black />
+            <Icon name="service" size="ty" />
             <span className={styles.tableTitleName}>Services</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="email_base" size="ty" black />
+            <Icon name="email_base" size="ty" />
             <span className={styles.tableTitleName}>Reminder</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="spinner" size="ty" black />
+            <Icon name="spinner" size="ty" />
             <span className={styles.tableTitleName}>Status</span>
+          </div>
+        </Pagination.Column>
+
+        <Pagination.Column>
+          <div className={styles.tableTitle}>
+            <Icon name="dial" size="ty" />
+            <span className={styles.tableTitleName}>Actions</span>
           </div>
         </Pagination.Column>
 
@@ -170,14 +189,16 @@ function BarberAppointments() {
               <div className={styles.dateContainer}>
                 <div className={styles.date}>
                   <span className={styles.date}>{appointment.date.replaceAll('-', ' / ')}</span>
-                  <span className={styles.slot}>( {appointment.slot} )</span>
+                  <span className={styles.slot}>( {formatTime(appointment.slot)} )</span>
                 </div>
               </div>
             </Pagination.Cell>
 
             <Pagination.Cell>
               <div className={styles.amountSpent}>
-                <span className={styles.amount}>${appointment.amount_spent}</span>
+                <span className={styles.amount}>
+                  {shop.currency_symbol} {appointment.amount_spent}
+                </span>
               </div>
             </Pagination.Cell>
 
@@ -186,22 +207,68 @@ function BarberAppointments() {
             </Pagination.Cell>
 
             <Pagination.Cell>
-              <Tag className={styles.reminderTag} color={appointment.reminder_email_sent ? 'blue' : 'yellow'}>
-                {appointment.reminder_email_sent ? 'Sent' : 'Not Sent'}
+              <Tag className={styles.reminderTag} color={appointment.reminder_sent_at ? 'blue' : 'yellow'}>
+                {appointment.reminder_sent_at ? 'Sent' : 'Scheduled'}
               </Tag>
             </Pagination.Cell>
 
             <Pagination.Cell>
               <Tag
                 className={styles.statusTag}
-                color={appointment.status === 'COMPLETED' ? 'green' : appointment.status === 'ONGOING' ? 'yellow' : 'red'}
+                color={
+                  appointment.status === 'COMPLETED'
+                    ? 'green'
+                    : ['ONGOING', 'IN_PROGRESS'].includes(appointment.status)
+                      ? 'yellow'
+                      : 'red'
+                }
               >
-                {appointment.status.charAt(0) + appointment.status.slice(1).toLowerCase()}
+                {appointment.status
+                  .replaceAll('_', ' ')
+                  .toLowerCase()
+                  .replace(/^./, (value) => value.toUpperCase())}
               </Tag>
+            </Pagination.Cell>
+
+            <Pagination.Cell>
+              <Button
+                type="button"
+                size="sm"
+                color="actionbtn"
+                aria-label="Update appointment status"
+                disabled={!['ONGOING', 'IN_PROGRESS'].includes(appointment.status)}
+                onClick={() => setStatusPopup({ open: true, appointment })}
+              >
+                <Icon name="pen" size="ty" />
+              </Button>
             </Pagination.Cell>
           </Pagination.Row>
         ))}
       </Pagination>
+
+      <Modal
+        open={statusPopup.open}
+        fields={{ status: '' }}
+        action={{ submit: 'Update status', loading: 'Updating...' }}
+        onSubmit={handleStatusUpdate}
+        onClose={() => setStatusPopup({ open: false, appointment: null })}
+      >
+        <Modal.Title icon="appointment">Update Appointment</Modal.Title>
+        <Modal.Description>
+          Record the service outcome for the {formatTime(statusPopup.appointment?.slot)} appointment.
+        </Modal.Description>
+        <Input
+          type="dropdown"
+          name="status"
+          label="New status"
+          required
+          fetcher={async () => [
+            ...(statusPopup.appointment?.status === 'ONGOING' ? [{ key: 'IN_PROGRESS', value: 'Start appointment' }] : []),
+            { key: 'COMPLETED', value: 'Mark completed' },
+            ...(statusPopup.appointment?.status === 'ONGOING' ? [{ key: 'NO_SHOW', value: 'Mark no-show' }] : []),
+          ]}
+        />
+      </Modal>
     </div>
   );
 }

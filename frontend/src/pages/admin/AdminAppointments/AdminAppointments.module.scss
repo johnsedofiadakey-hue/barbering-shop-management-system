@@ -50,7 +50,7 @@
       }
 
       .slot {
-        color: $color-primary;
+        color: $text-strong;
         font-size: 1.05rem;
         font-weight: 500;
       }
@@ -73,7 +73,7 @@
     font-weight: 600;
 
     .no-services {
-      color: $color-primary;
+      color: $text-strong;
       font-style: italic;
       font-weight: 500;
     }
@@ -83,5 +83,15 @@
   .reminder-tag {
     width: 8rem;
     text-align: center;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .admin-appointments {
+    padding: 1.4rem;
+
+    .action .refresh-btn {
+      width: 100%;
+    }
   }
 }

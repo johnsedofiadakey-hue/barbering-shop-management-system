@@ -34,7 +34,7 @@
   }
 
   .availability-date {
-    color: $color-primary;
+    color: $text-strong;
     font-size: 1.3rem;
     font-weight: 600;
   }
@@ -43,13 +43,27 @@
     display: flex;
 
     .slots {
-      color: $color-primary;
+      color: $text-strong;
       font-size: 1.3rem;
       font-weight: 600;
 
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .barber-availabilities {
+    margin: 1.4rem;
+
+    .action .refresh-btn {
+      width: 100%;
+    }
+
+    .availability-slots .slots {
+      white-space: normal;
     }
   }
 }

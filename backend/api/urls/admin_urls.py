@@ -8,9 +8,23 @@ from ..views import (
     create_barber_availability,
     manage_barber_availability,
     get_all_appointments,
+    manage_shop_settings,
+    manage_portfolio,
+    manage_portfolio_item,
+    manage_services,
+    manage_service,
+    manage_before_after,
+    manage_before_after_item,
 )
 
 urlpatterns = [
+    path('shop/', manage_shop_settings, name='manage_shop_settings'),
+    path('portfolio/', manage_portfolio, name='manage_portfolio'),
+    path('portfolio/<int:item_id>/', manage_portfolio_item, name='manage_portfolio_item'),
+    path('services/', manage_services, name='manage_services'),
+    path('services/<int:service_id>/', manage_service, name='manage_service'),
+    path('before-after/', manage_before_after, name='manage_before_after'),
+    path('before-after/<int:item_id>/', manage_before_after_item, name='manage_before_after_item'),
     # Admin profile management
     path('profile/', manage_admin_profile, name='manage_admin_profile'),
 

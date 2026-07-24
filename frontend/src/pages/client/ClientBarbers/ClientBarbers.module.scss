@@ -1,98 +1,221 @@
 @use '@styles/variables.module.scss' as *;
 
-.client-barbers {
-  margin: 5rem;
+.barber-page {
+  width: min(118rem, 100%);
+  margin-inline: auto;
+  padding: clamp(2rem, 4vw, 5rem);
+}
 
-  .action {
-    padding-block: 1rem;
+.page-header {
+  margin-bottom: 2.4rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
 
+  .eyebrow {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: $color-gold;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    color: $text-strong;
+    font-size: clamp(2.8rem, 5vw, 4.6rem);
+    line-height: 1.05;
+  }
+
+  p {
+    max-width: 58rem;
+    margin-top: 0.8rem;
+    color: $text-muted;
+    font-size: 1.35rem;
+  }
+
+  .refresh-button {
+    flex: 0 0 auto;
+    gap: 0.7rem;
+  }
+}
+
+.barber-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 32rem), 1fr));
+  gap: 1.6rem;
+}
+
+.barber-card {
+  min-width: 0;
+  padding: 2rem;
+  border: 1px solid $border-panel;
+  border-radius: 2rem;
+  background: linear-gradient(145deg, rgba(197, 160, 89, 0.06), transparent 42%), $color-primary;
+  box-shadow: 0 1.6rem 4rem rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.identity {
+  min-width: 0;
+
+  .available {
+    color: $color-gold;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin-top: 0.15rem;
+    color: $text-strong;
+    font-size: 2rem;
+  }
+}
+
+.rating-line {
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  > span {
+    color: $text-muted;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+}
+
+.description {
+  min-height: 4.6rem;
+  color: $text-muted;
+  font-size: 1.22rem;
+  line-height: 1.65;
+}
+
+.service-preview {
+  padding: 1.2rem 1.35rem;
+  border: 1px solid $border-hair;
+  border-radius: 1.4rem;
+  background: rgba(0, 0, 0, 0.16);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+
+  div {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
 
-    .action-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
+  span {
+    color: $text-dim;
+    font-size: 0.95rem;
+  }
+
+  strong {
+    color: $text-strong;
+    font-size: 1.25rem;
+  }
+}
+
+.service-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+
+  span {
+    padding: 0.45rem 0.75rem;
+    border: 1px solid $border-subtle;
+    border-radius: 999px;
+    color: $text-muted;
+    font-size: 0.95rem;
+  }
+}
+
+.book-button {
+  min-height: 4.8rem;
+  margin-top: auto;
+  gap: 0.7rem;
+  border-radius: 1.3rem;
+}
+
+.loading-state,
+.empty-state {
+  min-height: 32rem;
+  border: 1px solid $border-panel;
+  border-radius: 2rem;
+  background: $color-primary;
+  color: $text-muted;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1rem;
+  text-align: center;
+
+  h2 {
+    color: $text-strong;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .barber-page {
+    padding: 1.6rem 1.2rem 2.4rem;
+  }
+
+  .page-header {
+    align-items: center;
+    margin-bottom: 1.6rem;
+
+    h1 {
+      font-size: 2.8rem;
     }
 
-    .refresh-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
+    p {
+      margin-top: 0.55rem;
+      font-size: 1.15rem;
+    }
 
-      .line {
-        display: flex;
-        gap: 1rem;
+    .refresh-button {
+      width: 4.2rem;
+      height: 4.2rem;
+      padding: 0;
+      border-radius: 50%;
+
+      span {
+        display: none;
       }
     }
   }
 
-  .table-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-
-    .table-title-name {
-      display: block;
-      height: 1.7rem; // this is a hack to align icon with title
-      font-weight: 600;
-    }
+  .barber-grid {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
   }
 
-  .email-container {
-    display: flex; // need this to hide overflow
-
-    .email {
-      color: $color-primary;
-      font-size: 1.2rem;
-      font-weight: 600;
-
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+  .barber-card {
+    padding: 1.5rem;
+    border-radius: 1.8rem;
+    gap: 1.25rem;
   }
 
-  .revenue {
-    color: $color-primary;
-    font-size: 1.5rem;
-    font-weight: 600;
+  .description {
+    min-height: 0;
   }
 
-  .description-container {
-    display: flex; // need this to hide overflow
-
-    .description {
-      color: $color-primary;
-      font-size: 1.2rem;
-
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-
-  .no-description {
-    color: $color-muted;
-    font-style: italic;
-    font-size: 1rem;
-  }
-
-  .date {
-    color: $color-primary;
-    font-size: 1.2rem;
-    font-weight: 600;
-  }
-
-  .tag {
-    width: 7rem;
-    text-align: center; // centers text in tag
-  }
-
-  .actions {
-    display: flex;
-    gap: 2rem;
+  .book-button {
+    min-height: 5rem;
+    font-size: 1.25rem;
   }
 }

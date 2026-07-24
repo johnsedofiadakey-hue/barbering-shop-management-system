@@ -188,7 +188,7 @@ function BarberReviews() {
       <div className={styles.confirmation}>
         <div className={styles.confirmRow}>
           <div className={styles.confirmBlock}>
-            <Icon name="barber" size="ty" black />
+            <Icon name="barber" size="ty" />
             <span className={styles.confirmLabel}>Barber:</span>
           </div>
 
@@ -209,7 +209,7 @@ function BarberReviews() {
 
         <div className={styles.confirmRow}>
           <div className={styles.confirmBlock}>
-            <Icon name="rating" size="ty" black />
+            <Icon name="rating" size="ty" />
             <span className={styles.confirmLabel}>Rating:</span>
           </div>
 
@@ -222,7 +222,7 @@ function BarberReviews() {
 
         <div className={styles.confirmRow}>
           <div className={styles.confirmBlock}>
-            <Icon name="comment" size="ty" black />
+            <Icon name="comment" size="ty" />
             <span className={styles.confirmLabel}>Rating:</span>
           </div>
 
@@ -273,7 +273,7 @@ function BarberReviews() {
             <Button
               className={styles.actionBtn}
               type="button"
-              color="primary"
+              color="gold"
               size="md"
               onClick={openPostPopup} //
             >
@@ -286,35 +286,35 @@ function BarberReviews() {
         {/* Table headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="barber" size="ty" black />
+            <Icon name="barber" size="ty" />
             <span className={styles.tableTitleName}>Barber</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="rating" size="ty" black />
+            <Icon name="rating" size="ty" />
             <span className={styles.tableTitleName}>Rating</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="comment" size="ty" black />
+            <Icon name="comment" size="ty" />
             <span className={styles.tableTitleName}>Comment</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="date" size="ty" black />
+            <Icon name="date" size="ty" />
             <span className={styles.tableTitleName}>Date</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="dial" size="ty" black />
+            <Icon name="dial" size="ty" />
             <span className={styles.tableTitleName}>Actions</span>
           </div>
         </Pagination.Column>
@@ -349,19 +349,19 @@ function BarberReviews() {
                 <Button
                   type="button"
                   size="sm"
-                  color="animated"
+                  color="actionbtn"
                   onClick={() => openEditPopup(review)} //
                 >
-                  <Icon name="pen" size="ty" black />
+                  <Icon name="pen" size="ty" />
                 </Button>
 
                 <Button
                   type="button"
                   size="sm"
-                  color="animated"
+                  color="actionbtn"
                   onClick={() => openDeletePopup(review)} //
                 >
-                  <Icon name="trash" size="ty" black />
+                  <Icon name="trash" size="ty" />
                 </Button>
               </div>
             </Pagination.Cell>

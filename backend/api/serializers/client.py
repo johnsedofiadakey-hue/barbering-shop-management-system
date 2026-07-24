@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.db import transaction
 from rest_framework import serializers
 from ..utils import (
     ClientValidationMixin,
@@ -10,7 +11,6 @@ from ..utils import (
     GetBarbersMixin,
     GetAppointmentsMixin,
     GetReviewsMixin,
-    phone_number_validator,
 )
 from ..models import (
     Appointment, 
@@ -18,6 +18,8 @@ from ..models import (
     AppointmentService,
     Review,
     AppointmentStatus, 
+    AppointmentLocation,
+    ShopSettings,
 )
 
 
@@ -41,13 +43,18 @@ class UpdateClientProfileSerializer(ClientValidationMixin, UsernameValidationMix
     username = serializers.CharField(required=False)
     name = serializers.CharField(required=False)
     surname = serializers.CharField(required=False)
-    phone_number = serializers.CharField(required=False, max_length=16, validators=[phone_number_validator])
+    phone_number = serializers.CharField(required=False, max_length=16)
 
     def validate(self, attrs):
         attrs = self.validate_client(attrs)
 
-        if not any(field in attrs for field in ('username', 'name', 'surname', 'phone_number')):
-            raise serializers.ValidationError('You must provide at least one field: username, name, surname or phone_number.')
+        if 'phone_number' in attrs:
+            raise serializers.ValidationError({
+                'phone_number': 'Phone number changes require a new verified login. Contact support to transfer this account.'
+            })
+
+        if not any(field in attrs for field in ('username', 'name', 'surname')):
+            raise serializers.ValidationError('You must provide at least one field: username, name or surname.')
         
         if 'username' in attrs:
             attrs = self.validate_username_unique(attrs, user_instance=attrs['client'])
@@ -64,9 +71,6 @@ class UpdateClientProfileSerializer(ClientValidationMixin, UsernameValidationMix
         if 'surname' in validated_data:
             instance.surname = validated_data['surname']
         
-        if 'phone_number' in validated_data:
-            instance.phone_number = validated_data['phone_number']
-
         instance.save()
         return instance
 
@@ -105,16 +109,31 @@ class CreateClientAppointmentSerializer(ClientValidationMixin, BarberValidationM
     """
     date = serializers.DateField(required=True)
     slot = serializers.TimeField(required=True)
-    services = serializers.PrimaryKeyRelatedField(required=True, queryset=Service.objects.all(), many=True)
+    services = serializers.PrimaryKeyRelatedField(required=True, queryset=Service.objects.all(), many=True, allow_empty=True)
+    location_type = serializers.ChoiceField(required=False, choices=AppointmentLocation.choices(), default=AppointmentLocation.SHOP.value)
+    home_address = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    notes = serializers.CharField(required=False, allow_blank=True, max_length=500)
 
     def validate(self, attrs):
         attrs = self.validate_client(attrs)
         attrs = self.validate_barber(attrs)
-        attrs = self.validate_appointment_date_and_slot(attrs)
         attrs = self.validate_services_belong_to_barber(attrs)
-        
+        shop = ShopSettings.load()
+
+        if attrs['location_type'] == AppointmentLocation.HOME.value:
+            if not shop.home_visits_enabled:
+                raise serializers.ValidationError('Home visits are currently unavailable.')
+            if not attrs.get('home_address', '').strip():
+                raise serializers.ValidationError('A service address is required for home visits.')
+            attrs['travel_fee'] = shop.home_visit_fee
+        else:
+            attrs['home_address'] = ''
+            attrs['travel_fee'] = 0
+
+        attrs = self.validate_appointment_date_and_slot(attrs)
         return attrs
 
+    @transaction.atomic
     def create(self, validated_data):
         client = validated_data['client']
         barber = validated_data['barber']
@@ -126,7 +145,12 @@ class CreateClientAppointmentSerializer(ClientValidationMixin, BarberValidationM
             client=client, 
             barber=barber, 
             date=date, 
-            slot=slot
+            slot=slot,
+            duration_minutes=validated_data['duration_minutes'],
+            location_type=validated_data['location_type'],
+            home_address=validated_data.get('home_address', ''),
+            notes=validated_data.get('notes', ''),
+            travel_fee=validated_data.get('travel_fee', 0),
         )
         appointment.save()
 
@@ -135,9 +159,48 @@ class CreateClientAppointmentSerializer(ClientValidationMixin, BarberValidationM
                 appointment=appointment,
                 name=service.name,
                 price=service.price,
+                duration_minutes=service.duration_minutes,
                 original_service=service
             )
 
+        transaction.on_commit(lambda: self._queue_confirmation(appointment.id))
+
+        return appointment
+
+    @staticmethod
+    def _queue_confirmation(appointment_id):
+        from ..tasks import send_booking_confirmation
+
+        try:
+            send_booking_confirmation.delay(appointment_id)
+        except Exception:
+            send_booking_confirmation(appointment_id)
+
+
+class RescheduleClientAppointmentSerializer(ClientValidationMixin, AppointmentValidationMixin, serializers.Serializer):
+    date = serializers.DateField(required=True)
+    slot = serializers.TimeField(required=True)
+
+    def validate(self, attrs):
+        attrs = self.validate_client(attrs)
+        attrs = self.validate_find_appointment(attrs)
+        appointment = attrs['appointment']
+        attrs['barber'] = appointment.barber
+        attrs['duration_minutes'] = appointment.duration_minutes
+        attrs = self.validate_appointment_date_and_slot(attrs, appointment_instance=appointment)
+        return attrs
+
+    @transaction.atomic
+    def save(self, **kwargs):
+        appointment = self.validated_data['appointment']
+        appointment.date = self.validated_data['date']
+        appointment.slot = self.validated_data['slot']
+        appointment.reminder_email_sent = False
+        appointment.reminder_sent_at = None
+        appointment.confirmation_sent_at = None
+        appointment.notification_error = ''
+        appointment.save()
+        transaction.on_commit(lambda: CreateClientAppointmentSerializer._queue_confirmation(appointment.id))
         return appointment
 
 

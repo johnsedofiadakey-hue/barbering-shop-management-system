@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.core.cache import cache
 from datetime import timedelta
 from api.models import Client, OTP, OTPPurpose
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 @patch('api.serializers.auth.send_otp_sms')
@@ -68,6 +69,7 @@ class ClientOTPAuthFlowTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
         self.assertIn('access_token', response.data['token'])
+        self.assertTrue(response.data['requires_profile_setup'])
 
         client = Client.objects.get(phone_number=self.phone_number)
         self.assertTrue(client.is_active)
@@ -90,6 +92,17 @@ class ClientOTPAuthFlowTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Client.objects.filter(phone_number=self.phone_number).count(), 1)
         self.assertEqual(response.data['user']['id'], existing.id)
+        self.assertFalse(response.data['requires_profile_setup'])
+
+    def test_client_refresh_session_is_persistent(self, mock_send_otp_sms):
+        self.request_code()
+        raw_code = self.get_latest_code(mock_send_otp_sms)
+
+        response = self.client.post(self.verify_otp_url, {'phone_number': self.phone_number, 'code': raw_code}, format='json')
+        refresh = RefreshToken(response.data['token']['refresh_token'])
+
+        self.assertGreaterEqual(refresh['exp'] - refresh['iat'], 3649 * 24 * 60 * 60)
+        self.assertEqual(response.data['token']['refresh_expires_in'], 3650 * 24 * 60 * 60)
 
     def test_verify_otp_fails_with_wrong_code(self, mock_send_otp_sms):
         """

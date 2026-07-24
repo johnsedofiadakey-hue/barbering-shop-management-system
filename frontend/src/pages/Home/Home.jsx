@@ -1,180 +1,185 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
-import styles from './Home.module.scss';
 import api from '@api';
+import styles from './Home.module.scss';
 
-import Spinner from '@components/common/Spinner/Spinner';
-import Button from '@components/common/Button/Button';
-import Icon from '@components/common/Icon/Icon';
-import ProfileImage from '@components/ui/ProfileImage/ProfileImage';
+import BookingWidget from '@components/ui/BookingWidget/BookingWidget';
 
-/**
- * Static showcase content (no photography assets available yet — styled as a lookbook of tiles).
- */
-const FEATURED_CUTS = [
-  { icon: 'scissors', name: 'Skin Fade', tag: '30 min', price: 25 },
-  { icon: 'scissors', name: 'Classic Crop', tag: '30 min', price: 20 },
-  { icon: 'user', name: 'Beard Sculpt', tag: '20 min', price: 15 },
-  { icon: 'hourglass', name: 'Hot Towel Shave', tag: '25 min', price: 20 },
-  { icon: 'client', name: 'Kids Cut', tag: '20 min', price: 12 },
-  { icon: 'availability', name: 'Home Visit Special', tag: 'At your door', price: 35 },
+import heroImage from '@assets/images/portfolio/hero-barbershop.webp';
+import fadeImage from '@assets/images/portfolio/skin-fade.webp';
+import beardImage from '@assets/images/portfolio/beard-sculpt.webp';
+import towelImage from '@assets/images/portfolio/hot-towel.webp';
+
+const DEFAULT_SHOP = {
+  name: 'BarberManager',
+  tagline: 'Precision cuts. Effortless booking.',
+  announcement_enabled: false,
+  announcement_text: '',
+  description: 'A modern barbershop built around craft, comfort, and dependable service.',
+  currency_code: 'GHS',
+  currency_symbol: 'GH₵',
+};
+
+const FALLBACK_PORTFOLIO = [
+  { id: 'fade', image: fadeImage },
+  { id: 'beard', image: beardImage },
+  { id: 'towel', image: towelImage },
 ];
 
-const HOW_IT_WORKS = [
-  { icon: 'dial', title: 'Enter your number', text: 'No password, no forms. Just your phone.' },
-  { icon: 'barber', title: 'Pick barber & time', text: 'Browse real availability and choose what suits you.' },
-  { icon: 'email_base', title: 'Get an SMS confirmation', text: 'And a reminder 90 minutes before your cut.' },
-  { icon: 'check', title: 'Show up. Fresh cut.', text: 'Reschedule or cancel anytime from your phone.' },
+const FALLBACK_SERVICES = [
+  {
+    id: 'service-fade',
+    name: 'Signature fade',
+    description: 'Consultation, tailored fade, line-up, and styled finish.',
+    image: fadeImage,
+    duration_minutes: 60,
+    price: 120,
+  },
+  {
+    id: 'service-beard',
+    name: 'Beard sculpt',
+    description: 'Precision shaping, clean detailing, and conditioning.',
+    image: beardImage,
+    duration_minutes: 30,
+    price: 80,
+  },
+  {
+    id: 'service-ritual',
+    name: 'Cut & hot towel ritual',
+    description: 'A complete cut followed by a refined hot towel finish.',
+    image: towelImage,
+    duration_minutes: 75,
+    price: 180,
+  },
 ];
+
+const getServiceImage = (service, index) => {
+  if (service.image) return service.image;
+  const name = service.name?.toLowerCase() || '';
+  if (name.includes('beard')) return beardImage;
+  if (name.includes('towel') || name.includes('shave')) return towelImage;
+  if (name.includes('fade') || name.includes('cut')) return fadeImage;
+  return FALLBACK_PORTFOLIO[index % FALLBACK_PORTFOLIO.length].image;
+};
+
+const LOGIN_PATH = '/login?next=%2Fclient%2Fdashboard';
 
 function Home() {
   const { isAuthenticated, isLoggingOut } = useAuth();
   const navigate = useNavigate();
+  const [shop, setShop] = useState(DEFAULT_SHOP);
+  const [services, setServices] = useState(FALLBACK_SERVICES);
 
-  const [barbers, setBarbers] = useState([]);
-  const [isLoadingBarbers, setIsLoadingBarbers] = useState(true);
-
-  /**
-   * On authentication state change, redirect authenticated users away from home.
-   */
   useEffect(() => {
     if (!isLoggingOut && isAuthenticated) navigate('/dashboard', { replace: true });
   }, [isAuthenticated, isLoggingOut, navigate]);
 
-  /**
-   * Fetches real barbers for the "Meet the team" section (falls back to an empty section on error).
-   */
-  const fetchBarbers = useCallback(async () => {
-    setIsLoadingBarbers(true);
+  const hydrateLanding = useCallback(async () => {
+    const [shopResult, barberResult] = await Promise.allSettled([api.pub.getShopSettings(), api.pub.getBarbersPublic()]);
 
-    try {
-      const { barbers } = await api.pub.getBarbersPublic();
-      setBarbers((barbers || []).slice(0, 4));
-    } catch {
-      setBarbers([]);
-    } finally {
-      setIsLoadingBarbers(false);
+    if (shopResult.status === 'fulfilled') setShop({ ...DEFAULT_SHOP, ...shopResult.value.shop });
+    if (barberResult.status === 'fulfilled') {
+      const activeBarbers = barberResult.value.barbers || [];
+      const serviceResults = await Promise.allSettled(
+        activeBarbers.slice(0, 8).map((barber) => api.pub.getBarberServicesPublic(barber.id)),
+      );
+      const serviceMap = new Map();
+      serviceResults.forEach((result) => {
+        if (result.status !== 'fulfilled') return;
+        (result.value.services || []).forEach((service) => {
+          const key = service.name.trim().toLowerCase();
+          const current = serviceMap.get(key);
+          if (!current || Number(service.price) < Number(current.price)) serviceMap.set(key, service);
+        });
+      });
+      if (serviceMap.size) setServices(Array.from(serviceMap.values()).slice(0, 6));
     }
   }, []);
 
   useEffect(() => {
-    fetchBarbers();
-  }, [fetchBarbers]);
+    hydrateLanding();
+  }, [hydrateLanding]);
 
-  // Don't show landing if redirecting
-  if (isLoggingOut || isAuthenticated) return <Spinner />;
+  const formatPrice = (price) => `${shop.currency_symbol || shop.currency_code} ${Number(price || 0).toFixed(0)}`;
+
+  const handleBookingComplete = (bookingDetails) => {
+    // Generate a redirect URL with the selected date and time to maintain context after login
+    const dateStr = bookingDetails.date.toISOString().split('T')[0];
+    const timeStr = bookingDetails.time;
+    const nextPath = encodeURIComponent(`/client/appointments?book=1&date=${dateStr}&time=${timeStr}`);
+    navigate(`/login?next=${nextPath}`);
+  };
+
+  if (isLoggingOut || isAuthenticated) return null;
 
   return (
     <div className={styles.home}>
-      {/* Hero */}
-      <section className={styles.hero}>
-        <span className={styles.eyebrow}>
-          <Icon name="availability" size="sm" /> Walk-ins welcome &middot; Home visits available
-        </span>
-
-        <h1 className={styles.headline}>
-          Fresh cut, <span className={styles.gold}>booked in under a minute</span>
-        </h1>
-
-        <p className={styles.subheadline}>
-          No account, no password. Enter your name and phone number, pick your barber and time — we&apos;ll text you a
-          confirmation and a reminder before your cut.
-        </p>
-
-        <div className={styles.heroActions}>
-          <Button href="/login" size="lg" color="gold">
-            Book appointment
-          </Button>
-          <Button href="#cuts" size="lg" color="goldoutline">
-            View services
-          </Button>
-        </div>
-
-        <div className={styles.badges}>
-          <div className={styles.badge}>
-            <Icon name="check" size="sm" /> Expert barbers
-          </div>
-          <div className={styles.badge}>
-            <Icon name="review" size="sm" /> Real client reviews
-          </div>
-          <div className={styles.badge}>
-            <Icon name="email_base" size="sm" /> SMS reminders
-          </div>
-        </div>
-      </section>
-
-      {/* Cuts of the week */}
-      <section id="cuts" className={styles.cuts}>
-        <h2 className={styles.sectionTitle}>Cuts of the week</h2>
-        <p className={styles.sectionSubtitle}>A taste of what our barbers offer — full pricing shown at booking.</p>
-
-        <div className={styles.cutsGrid}>
-          {FEATURED_CUTS.map((cut) => (
-            <div className={styles.cutTile} key={cut.name}>
-              <div className={styles.cutIcon}>
-                <Icon name={cut.icon} size="lg" />
-              </div>
-              <div className={styles.cutName}>{cut.name}</div>
-              <div className={styles.cutMeta}>
-                <span>{cut.tag}</span>
-                <span className={styles.cutPrice}>${cut.price}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className={styles.howItWorks}>
-        <h2 className={styles.sectionTitle}>Fast. Intuitive. Built for modern clients.</h2>
-
-        <div className={styles.stepsRow}>
-          {HOW_IT_WORKS.map((step, i) => (
-            <div className={styles.step} key={step.title}>
-              <div className={styles.stepNumber}>{i + 1}</div>
-              <div className={styles.stepIcon}>
-                <Icon name={step.icon} size="lg" />
-              </div>
-              <div className={styles.stepTitle}>{step.title}</div>
-              <div className={styles.stepText}>{step.text}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Meet the team */}
-      {(isLoadingBarbers || barbers.length > 0) && (
-        <section className={styles.team}>
-          <h2 className={styles.sectionTitle}>Meet the team</h2>
-
-          {isLoadingBarbers ? (
-            <Spinner />
-          ) : (
-            <div className={styles.teamRow}>
-              {barbers.map((barber) => (
-                <div className={styles.teamCard} key={barber.id}>
-                  <ProfileImage src={barber.profile_image} size="6rem" />
-                  <div className={styles.teamName}>
-                    {barber.name} {barber.surname}
-                  </div>
-                  <div className={styles.teamRating}>
-                    <Icon name="rating" size="sm" /> {Number(barber.average_rating || 0).toFixed(1)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+      {shop.announcement_enabled && shop.announcement_text && (
+        <aside className={styles.promoBanner} aria-label="Current promotion">
+          <span>{shop.announcement_text}</span>
+        </aside>
       )}
+      <section className={styles.hero}>
+        <img className={styles.heroImage} src={heroImage} alt="Barber finishing a precision fade" />
+        <div className={styles.heroShade} />
 
-      {/* Final CTA */}
-      <section className={styles.finalCta}>
-        <h2 className={styles.finalCtaTitle}>Ready for your next cut?</h2>
-        <Button href="/login" size="lg" color="gold">
-          Book appointment
-        </Button>
+        <div className={styles.heroContent}>
+          <span className={styles.eyebrow}>Accra-ready booking · phone-secure account</span>
+          <p className={styles.kicker}>{shop.tagline}</p>
+          <h1>
+            Look sharp.
+            <br />
+            <span className="text-gradient-gold">Feel unmistakable.</span>
+          </h1>
+          <p className={styles.heroCopy}>
+            Choose your time in one clear flow. Your booking stays connected to your phone and easy to manage.
+          </p>
+
+          <p className={styles.returningPrompt}>
+            Already booked before? <a href={LOGIN_PATH}>Sign in to your account</a>
+          </p>
+
+          <div className={styles.bookingWidgetWrapper}>
+            <BookingWidget onBookingComplete={handleBookingComplete} />
+          </div>
+        </div>
       </section>
+
+      <main>
+        <section id="services" className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.eyebrow}>The service menu</span>
+              <h2>Know what you are booking.</h2>
+            </div>
+            <p>Clear timing and starting prices help you choose the right service before you reach the chair.</p>
+          </div>
+
+          <div className={styles.serviceGrid}>
+            {services.map((service, index) => (
+              <article className={styles.serviceCard} key={service.id}>
+                <div className={styles.serviceImageWrap}>
+                  <img
+                    className={styles.serviceImage}
+                    src={getServiceImage(service, index)}
+                    alt={`${service.name} service`}
+                    loading={index > 2 ? 'lazy' : 'eager'}
+                  />
+                </div>
+                <div className={styles.serviceContent}>
+                  <div className={styles.serviceMeta}>
+                    <span>{service.duration_minutes} min</span>
+                    <strong>From {formatPrice(service.price)}</strong>
+                  </div>
+                  <h3>{service.name}</h3>
+                  <p>{service.description || 'A considered service tailored to your preferred finish.'}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

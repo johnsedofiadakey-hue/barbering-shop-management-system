@@ -1,6 +1,5 @@
 import secrets
 from datetime import timedelta
-from django.contrib.auth import authenticate
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.utils import timezone
@@ -9,18 +8,49 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.settings import api_settings
 from rest_framework.exceptions import PermissionDenied, Throttled
 from rest_framework import serializers
-from ..models import User, Client, OTP, OTPPurpose
+from ..models import User, Client, OTP, OTPPurpose, Roles
 from ..utils import (
     UserValidationMixin,
-    UsernameValidationMixin,
     EmailValidationMixin,
-    PasswordValidationMixin,
     PhoneNumberValidationMixin,
     UIDTokenValidationSerializer,
     BarberValidationMixin,
     get_or_create_client_by_phone,
 )
 from ..utils.sms import send_otp_sms
+
+
+def _attach_client_session(attrs, client):
+    """Attach the verified client and a Django JWT pair to serializer data."""
+    if not client.is_active:
+        raise PermissionDenied('Account inactive.')
+
+    if not client.phone_verified_at:
+        client.phone_verified_at = timezone.now()
+        client.save(update_fields=['phone_verified_at'])
+
+    refresh = RefreshToken.for_user(client)
+    refresh.set_exp(lifetime=timedelta(days=settings.CLIENT_REFRESH_TOKEN_DAYS))
+    attrs['user'] = client
+    attrs['refresh'] = refresh
+    return attrs
+
+
+def _client_session_representation(instance):
+    user = instance['user']
+    refresh = instance['refresh']
+
+    return {
+        'user': user.to_dict(),
+        'requires_profile_setup': not bool(user.name.strip() and user.surname.strip()),
+        'token': {
+            'access_token': str(refresh.access_token),
+            'refresh_token': str(refresh),
+            'expires_in': int(api_settings.ACCESS_TOKEN_LIFETIME.total_seconds()),
+            'refresh_expires_in': settings.CLIENT_REFRESH_TOKEN_DAYS * 24 * 60 * 60,
+            'token_type': 'Bearer',
+        }
+    }
 
 class GetCurrentUserSerializer(UserValidationMixin, serializers.Serializer):
     """
@@ -35,12 +65,13 @@ class GetCurrentUserSerializer(UserValidationMixin, serializers.Serializer):
         return {'me': user.to_dict()}
     
 
-class RegisterBarberSerializer(UIDTokenValidationSerializer, BarberValidationMixin, UsernameValidationMixin, PasswordValidationMixin, serializers.Serializer):
+class RegisterBarberSerializer(UIDTokenValidationSerializer, BarberValidationMixin, serializers.Serializer):
     """
-    Barber completes registration via invite link. Only sets username and password.
+    Barber completes registration via invite link. Authenticates with a Firebase-verified
+    identity (created client-side via Firebase email/password sign-up) rather than a Django
+    password, matching the Firebase-only staff sign-in path.
     """
-    username = serializers.CharField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
+    id_token = serializers.CharField(required=True, write_only=True)
     name = serializers.CharField(required=True)
     surname = serializers.CharField(required=True)
     description = serializers.CharField(required=False)
@@ -48,25 +79,31 @@ class RegisterBarberSerializer(UIDTokenValidationSerializer, BarberValidationMix
     def validate(self, attrs):
         attrs = self.validate_uid_token(attrs, target_key='barber')  # Returns User object to 'barber' key
         attrs = self.validate_barber(attrs, check_active=False)      # Changes User object in 'barber' to be type Barber
-        attrs = self.validate_username_format(attrs)
-        attrs = self.validate_username_unique(attrs)
 
         if attrs['barber'].is_active:
             raise serializers.ValidationError('Account already registered.')
+
+        decoded_token = _decode_firebase_token(attrs['id_token'], 'Invalid or expired sign-in.')
+        uid = decoded_token.get('uid')
+        if not uid:
+            raise PermissionDenied('The verified account is missing an identity.')
+        if User.objects.filter(firebase_uid=uid).exclude(pk=attrs['barber'].pk).exists():
+            raise serializers.ValidationError('This identity is already linked to another account.')
+        attrs['firebase_uid'] = uid
 
         return attrs
 
     def create(self, validated_data):
         barber = validated_data['barber']
-        barber.username = validated_data['username']
         barber.name = validated_data['name']
         barber.surname = validated_data['surname']
+        barber.firebase_uid = validated_data['firebase_uid']
         barber.is_active = True
 
         if 'description' in validated_data:
             barber.description = validated_data['description']
 
-        barber.set_password(validated_data['password'])
+        barber.set_unusable_password()  # sign-in for this account happens via Firebase, not Django password
         barber.save()
 
         return barber
@@ -142,7 +179,7 @@ class VerifyOTPSerializer(PhoneNumberValidationMixin, serializers.Serializer):
 
     On success: gets or creates the Client for this phone (OTP is the only client auth,
     so new clients get an unusable password), stamps phone_verified_at, and issues a
-    JWT pair — same response shape as LoginSerializer for frontend compatibility.
+    JWT pair.
     """
     phone_number = serializers.CharField(required=True)
     code = serializers.CharField(required=True, write_only=True)
@@ -171,67 +208,83 @@ class VerifyOTPSerializer(PhoneNumberValidationMixin, serializers.Serializer):
 
         client, _ = get_or_create_client_by_phone(attrs['phone_number'])
 
-        if not client.is_active:
-            raise PermissionDenied('Account inactive.')
-
-        if not client.phone_verified_at:
-            client.phone_verified_at = timezone.now()
-            client.save(update_fields=['phone_verified_at'])
-
-        attrs['user'] = client
-        attrs['refresh'] = RefreshToken.for_user(client)
-
-        return attrs
+        return _attach_client_session(attrs, client)
 
     def to_representation(self, instance):
-        user = instance['user']
-        refresh = instance['refresh']
-
-        return {
-            'user': user.to_dict(),
-            'token': {
-                'access_token': str(refresh.access_token),
-                'refresh_token': str(refresh),
-                'expires_in': int(api_settings.ACCESS_TOKEN_LIFETIME.total_seconds()),
-                'refresh_expires_in': int(api_settings.REFRESH_TOKEN_LIFETIME.total_seconds()),
-                'token_type': 'Bearer',
-            }
-        }
+        return _client_session_representation(instance)
 
 
-class LoginSerializer(serializers.Serializer):
+def _decode_firebase_token(id_token, error_message):
+    """Shared Firebase ID-token verification used by every Firebase-backed login path."""
+    if not getattr(settings, 'FIREBASE_AUTH_ENABLED', False):
+        raise PermissionDenied('Firebase authentication is not enabled.')
+
+    try:
+        import firebase_admin
+        from firebase_admin import auth as firebase_auth
+
+        try:
+            firebase_admin.get_app()
+        except ValueError:
+            firebase_admin.initialize_app(options={
+                'projectId': settings.FIREBASE_PROJECT_ID,
+            })
+
+        return firebase_auth.verify_id_token(id_token)
+    except Exception as exc:
+        raise PermissionDenied(error_message) from exc
+
+
+class FirebasePhoneLoginSerializer(PhoneNumberValidationMixin, serializers.Serializer):
+    """Exchange a Firebase phone-auth ID token for the application's JWT pair."""
+
+    id_token = serializers.CharField(required=True, write_only=True)
+
+    def validate(self, attrs):
+        decoded_token = _decode_firebase_token(attrs['id_token'], 'Invalid or expired phone verification.')
+
+        phone_number = decoded_token.get('phone_number')
+        if not phone_number:
+            raise PermissionDenied('The verified account does not contain a phone number.')
+
+        phone_attrs = self.validate_phone_number_format({'phone_number': phone_number})
+        client, _ = get_or_create_client_by_phone(phone_attrs['phone_number'])
+        attrs['phone_number'] = phone_attrs['phone_number']
+        return _attach_client_session(attrs, client)
+
+    def to_representation(self, instance):
+        return _client_session_representation(instance)
+
+
+class FirebaseStaffLoginSerializer(serializers.Serializer):
     """
-    Login using either email or username, not both.
-    Note: barber/admin only — clients authenticate via the OTP endpoints.
+    Exchange a Firebase email/password ID token for the application's JWT pair.
+
+    Unlike the client phone path, this never auto-creates an account: only a User
+    (Admin or Barber) that has already been explicitly linked via `firebase_uid`
+    (see the `create_firebase_admin` management command) can sign in this way.
     """
-    email = serializers.EmailField(required=False)
-    username = serializers.CharField(required=False)
-    password = serializers.CharField(required=True, write_only=True)
 
-    def validate(self, data):
-        email = data.get('email')
-        username = data.get('username')
-        password = data.get('password')
+    id_token = serializers.CharField(required=True, write_only=True)
 
-        if not email and not username:
-            raise serializers.ValidationError("You must provide either an email or username.")
-        if email and username:
-            raise serializers.ValidationError("Provide only one of email or username, not both.")
+    def validate(self, attrs):
+        decoded_token = _decode_firebase_token(attrs['id_token'], 'Invalid or expired sign-in.')
 
-        identifier = username or email
+        uid = decoded_token.get('uid')
+        if not uid:
+            raise PermissionDenied('The verified account is missing an identity.')
 
-        user = authenticate(username=identifier, password=password)
-
-        if not user:
-            raise PermissionDenied('Invalid credentials.')
+        try:
+            user = User.objects.get(firebase_uid=uid, role__in=[Roles.ADMIN.value, Roles.BARBER.value])
+        except User.DoesNotExist:
+            raise PermissionDenied('This account is not authorized for staff sign-in.') from None
 
         if not user.is_active:
-            raise PermissionDenied('Account inactive. Please verify your email.')
+            raise PermissionDenied('Account inactive.')
 
-        data['user'] = user
-        data['refresh'] = RefreshToken.for_user(user)
-
-        return data
+        attrs['user'] = user
+        attrs['refresh'] = RefreshToken.for_user(user)
+        return attrs
 
     def to_representation(self, instance):
         user = instance['user']
@@ -268,42 +321,6 @@ class LogoutSerializer(serializers.Serializer):
             self.token.blacklist()
         except AttributeError:
             raise serializers.ValidationError("Token blacklisting not supported.")
-
-
-class RequestPasswordResetSerializer(serializers.Serializer):
-    """
-    Request password reset by email associated to account
-    """
-    email = serializers.EmailField(required=True)
-
-    def get_user(self):
-        email = self.validated_data.get('email')
-
-        try:
-            user = User.objects.get(email=email, is_active=True)
-            return user
-        except User.DoesNotExist:
-            return  # Silently continue for security
-
-
-class ConfirmPasswordResetSerializer(PasswordValidationMixin, UIDTokenValidationSerializer):
-    """
-    Resets a user's password after validating the request token and password
-    """
-    password = serializers.CharField(required=True, write_only=True)
-
-    def validate(self, attrs):
-        attrs = self.validate_uid_token(attrs)
-        return attrs
-    
-    def save(self, **kwargs):
-        user = self.validated_data['user']
-        password = self.validated_data['password']
-
-        user.set_password(password)
-        user.save()
-
-        return user
 
 
 class RefreshTokenCustomSerializer(TokenRefreshSerializer):

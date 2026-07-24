@@ -17,9 +17,13 @@ function Input({
 
   // For Standard input
   autoComplete,
+  inputMode,
   hide,
   step,
   min,
+  max,
+  maxLength,
+  helperText,
 
   // For file input
   accept,
@@ -257,6 +261,7 @@ function Input({
         {!hasLoaded && selectLoading && <span className={styles.loading}>Loading...</span>}
         {selectOptions.length === 0 && !selectLoading && !selectError && <div className={styles.checkboxEmpty}>No options</div>}
         {selectError && <span className={styles.error}>{selectError}</span>}
+        {helperText && <small className={styles.helperText}>{helperText}</small>}
       </fieldset>
     );
   }
@@ -283,7 +288,7 @@ function Input({
             ))}
           </select>
 
-          <Icon className={styles.selectArrow} name={'arrow_down'} size="ty" black />
+          <Icon className={styles.selectArrow} name={'arrow_down'} size="ty" />
         </span>
 
         {selectError && <span className={styles.error}>{selectError}</span>}
@@ -335,7 +340,10 @@ function Input({
           name={name}
           type={inputType}
           min={min}
+          max={max}
           step={step}
+          maxLength={maxLength}
+          inputMode={inputMode}
           value={fields[name]}
           onChange={handleChange}
           autoComplete={autoComplete}
@@ -356,10 +364,11 @@ function Input({
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             disabled={disabled}
           >
-            <Icon name={showPassword ? 'eye_open' : 'eye_closed'} size="sm" black />
+            <Icon name={showPassword ? 'eye_open' : 'eye_closed'} size="sm" />
           </Button>
         )}
       </span>
+      {helperText && <small className={styles.helperText}>{helperText}</small>}
     </label>
   );
 }

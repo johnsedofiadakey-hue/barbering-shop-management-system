@@ -17,6 +17,7 @@ function Modal({
   onClose,
   onValidate, // custom validator for single-step modals
   initialStepIndex = 0, // default starts at step 0
+  wide = false,
   children, // expects Modal.Title, Modal.Description, then form fields, then (optionally) custom extra actions
 }) {
   const [isLoading, setIsLoading] = useState(false); // Used to disable the submit button while loading
@@ -89,11 +90,12 @@ function Modal({
 
   return (
     <Popup
-      className={styles.modalPopup}
+      className={`${styles.modalPopup} ${wide ? styles.wide : ''}`}
       open={open}
       onClose={onClose} //
     >
       <Form
+        key={`${open ? 'open' : 'closed'}-${JSON.stringify(fields || {})}`}
         initialFields={fields}
         validate={effectiveValidate}
         onSubmit={handleSubmit} //
@@ -118,7 +120,7 @@ function Modal({
 
               <Button
                 type="submit"
-                color="primary"
+                color="gold"
                 size="md"
                 disabled={isLoading}
                 wide //
@@ -157,7 +159,7 @@ const Step = ({ children }) => <>{children}</>; // Step container (may include `
 
 const Title = ({ icon, children }) => (
   <div className={styles.modalHeader}>
-    {icon && <Icon name={icon} size="lg" black />}
+    {icon && <Icon name={icon} size="lg" />}
     <span className={styles.modalTitle}>{children}</span>
   </div>
 );

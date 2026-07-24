@@ -34,22 +34,6 @@ def send_barber_invite_email(email, uid, token, domain):
     send_mail(subject, message, 'barber.manager.verify@gmail.com', [email])
 
 
-def send_password_reset_email(email, uid, token, domain):
-    """
-    Sends password reset email with reset link.
-    """
-    link = f'{domain}/reset-password/{uid}/{token}'
-
-    subject = '[BarberManager] You have requested to reset your password'
-    message = (
-        f'We received a request to reset your password.\n\n'
-        f'Please click the link below to set a new password:\n'
-        f'{link}\n\n'
-        'If you did not request a password reset, please ignore this email.'
-    )
-    send_mail(subject, message, 'barber.manager.verify@gmail.com', [email])
-
-
 def send_client_reminder_email(client, barber, appointment_datetime):
     """
     Sends a reminder email to the client 1 hour before their appointment.

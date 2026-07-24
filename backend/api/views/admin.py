@@ -5,8 +5,9 @@ from django.utils.encoding import force_bytes
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework import status
+from ..models import Barber
 from ..utils import (
     IsAdminRole,
     send_barber_invite_email,
@@ -19,6 +20,7 @@ from ..serializers import (
     GetAllClientsSerializer,
     InviteBarberSerializer,
     DeleteBarberSerializer,
+    UpdateBarberByAdminSerializer,
     CreateBarberAvailabilitySerializer,
     UpdateBarberAvailabilitySerializer,
     DeleteBarberAvailabilitySerializer,
@@ -149,18 +151,38 @@ def invite_barber(request):
 
 
 @extend_schema(
+    methods=['PATCH'],
+    request=UpdateBarberByAdminSerializer,
+    responses={200: UpdateBarberByAdminSerializer},
+    description="Admin only: Updates a barber's public details and profile image.",
+)
+@extend_schema(
     methods=['DELETE'],
     responses={204: OpenApiResponse(description="Barber deleted successfully.")},
     description="Admin only: Deletes a barber by ID using the serializer.",
 )
-@api_view(['DELETE'])
+@api_view(['PATCH', 'DELETE'])
 @permission_classes([IsAdminRole])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def delete_barber(request, barber_id):
     """
     Admin only: Deletes a barber by ID using the serializer
     """
+    if request.method == 'PATCH':
+        try:
+            barber = Barber.objects.get(pk=barber_id)
+        except Barber.DoesNotExist:
+            return Response({'detail': 'Barber not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = UpdateBarberByAdminSerializer(barber, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({'barber': barber.to_dict()}, status=status.HTTP_200_OK)
+
     serializer = DeleteBarberSerializer(data={"id": barber_id})
     serializer.is_valid(raise_exception=True)
+    barber = serializer.barber
+    if barber.profile_image:
+        barber.profile_image.delete(save=False)
     serializer.delete()
 
     return Response(status=status.HTTP_204_NO_CONTENT)

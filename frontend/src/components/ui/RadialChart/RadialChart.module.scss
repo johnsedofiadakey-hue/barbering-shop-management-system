@@ -5,7 +5,7 @@
 
   .circle-bg {
     fill: none;
-    stroke: $color-secondary;
+    stroke: #2a231a;
     stroke-width: 3.8;
   }
 
@@ -17,7 +17,7 @@
   }
 
   .numerator {
-    fill: $color-primary;
+    fill: $text-strong;
 
     font-size: 0.9rem;
     font-weight: 600;
@@ -25,6 +25,7 @@
 
     .denominator {
       font-size: 0.5rem;
+      fill: $text-muted;
     }
   }
 }

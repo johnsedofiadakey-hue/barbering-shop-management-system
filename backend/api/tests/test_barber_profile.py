@@ -1,10 +1,10 @@
 import datetime
-from zoneinfo import ZoneInfo
 from decimal import Decimal
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 from api.models import (
     User, 
     Barber,
@@ -23,7 +23,6 @@ class BarberProfileTest(APITestCase):
     """
     def setUp(self):
         # Endpoint URLs
-        self.login_url = reverse("login_user")
         self.profile_url = reverse("manage_barber_profile")
         self.services_url = reverse("manage_barber_services")
         self.availabilities_url = reverse("get_barber_availabilities")
@@ -57,8 +56,7 @@ class BarberProfileTest(APITestCase):
         """
         Authenticate as the test barber.
         """
-        resp = self.client.post(self.login_url, {"username": self.barber_user.username, "password": self.barber_password}, format="json")
-        token = resp.data["token"]["access_token"]
+        token = str(RefreshToken.for_user(self.barber_user).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
 
@@ -66,8 +64,7 @@ class BarberProfileTest(APITestCase):
         """
         Authenticate as the test non-barber client.
         """
-        resp = self.client.post(self.login_url, {"username": self.client_user.username, "password": "ClientPass123!"}, format="json")
-        token = resp.data["token"]["access_token"]
+        token = str(RefreshToken.for_user(self.client_user).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
 
@@ -278,7 +275,7 @@ class BarberProfileTest(APITestCase):
         """
         Only future availabilities and future slots for today are listed.
         """
-        now = timezone.now().astimezone(ZoneInfo('Europe/Rome'))
+        now = timezone.localtime(timezone.now())
 
         today = now.date()
         yesterday = today - datetime.timedelta(days=1)
@@ -371,6 +368,27 @@ class BarberProfileTest(APITestCase):
         appointments = resp.data["appointments"]
         self.assertIn(appointment_1.to_dict(), appointments)
         self.assertIn(appointment_2.to_dict(), appointments)
+
+
+    def test_barber_can_mark_started_appointment_as_no_show(self):
+        now = timezone.localtime(timezone.now())
+        appointment = Appointment.objects.create(
+            client=self.client_user,
+            barber=self.barber_user,
+            date=now.date(),
+            slot=(now - datetime.timedelta(minutes=30)).time(),
+            status=AppointmentStatus.ONGOING.value,
+        )
+        self.login_as_barber()
+        response = self.client.patch(
+            reverse('update_barber_appointment_status', kwargs={'appointment_id': appointment.id}),
+            {'status': AppointmentStatus.NO_SHOW.value},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        appointment.refresh_from_db()
+        self.assertEqual(appointment.status, AppointmentStatus.NO_SHOW.value)
 
 
     def test_list_reviews(self):

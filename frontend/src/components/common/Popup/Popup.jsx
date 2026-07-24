@@ -48,7 +48,7 @@ function Popup({ open, onClose, children, className }) {
           size="sm"
           aria-label="Close" //
         >
-          <Icon name="close" size="ty" black />
+          <Icon name="close" size="ty" />
         </Button>
 
         {children}

@@ -50,7 +50,7 @@
       }
 
       .slot {
-        color: $color-primary;
+        color: $text-strong;
         font-size: 1.05rem;
         font-weight: 500;
       }
@@ -73,7 +73,7 @@
     font-weight: 600;
 
     .no-services {
-      color: $color-primary;
+      color: $text-strong;
       font-style: italic;
       font-weight: 500;
     }
@@ -102,9 +102,23 @@
     display: flex;
 
     .date {
-      color: $color-primary;
+      color: $text-strong;
       font-size: 1.2rem;
       font-weight: 600;
+    }
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .barber-reviews {
+    margin: 1.4rem;
+
+    .action .refresh-btn {
+      width: 100%;
+    }
+
+    .review-comment .comment {
+      white-space: normal;
     }
   }
 }

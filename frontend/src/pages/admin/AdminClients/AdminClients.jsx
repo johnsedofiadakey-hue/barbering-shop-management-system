@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@hooks/useAuth';
+import { useShopSettings } from '@hooks/useShopSettings';
 import styles from './AdminClients.module.scss';
 import api from '@api';
+import { formatTime } from '@utils/dateTime';
 
 import Pagination from '@components/common/Pagination/Pagination';
 import Icon from '@components/common/Icon/Icon';
@@ -12,6 +14,7 @@ import Spinner from '@components/common/Spinner/Spinner';
 
 function AdminClients() {
   const { profile } = useAuth();
+  const shop = useShopSettings();
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -78,49 +81,49 @@ function AdminClients() {
         {/* Table Headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="user" size="ty" black />
+            <Icon name="user" size="ty" />
             <span className={styles.tableTitleName}>User</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="email_base" size="ty" black />
+            <Icon name="email_base" size="ty" />
             <span className={styles.tableTitleName}>Email</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="appointment" size="ty" black />
+            <Icon name="appointment" size="ty" />
             <span className={styles.tableTitleName}>Appointment</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="revenue" size="ty" black />
+            <Icon name="revenue" size="ty" />
             <span className={styles.tableTitleName}>Spent</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="completed" size="ty" black />
+            <Icon name="completed" size="ty" />
             <span className={styles.tableTitleName}>Completed</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="check" size="ty" black />
+            <Icon name="check" size="ty" />
             <span className={styles.tableTitleName}>Joined</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="spinner" size="ty" black />
+            <Icon name="spinner" size="ty" />
             <span className={styles.tableTitleName}>Status</span>
           </div>
         </Pagination.Column>
@@ -144,7 +147,7 @@ function AdminClients() {
                   {client.upcoming_appointment ? (
                     <>
                       <span className={styles.appointmentDate}>{client.upcoming_appointment.date.replaceAll('-', ' / ')}</span>
-                      <span className={styles.appointmentSlot}>( {client.upcoming_appointment.slot} )</span>
+                      <span className={styles.appointmentSlot}>( {formatTime(client.upcoming_appointment.slot)} )</span>
                     </>
                   ) : (
                     <span className={styles.noAppointment}>—</span>
@@ -154,7 +157,9 @@ function AdminClients() {
             </Pagination.Cell>
 
             <Pagination.Cell>
-              <span className={styles.spent}>${client.total_spent}</span>
+              <span className={styles.spent}>
+                {shop.currency_symbol} {client.total_spent}
+              </span>
             </Pagination.Cell>
 
             <Pagination.Cell>

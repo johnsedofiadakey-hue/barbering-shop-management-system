@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta, datetime
+from django.utils import timezone
 from rest_framework import serializers
 from ..utils import (
     AdminValidationMixin,
@@ -135,6 +136,29 @@ class DeleteBarberSerializer(serializers.Serializer):
     def delete(self):
         self.barber.delete()
         return self.barber
+
+
+class UpdateBarberByAdminSerializer(serializers.ModelSerializer):
+    profile_image = serializers.ImageField(required=False, allow_null=True)
+
+    class Meta:
+        model = Barber
+        fields = ('email', 'name', 'surname', 'description', 'profile_image', 'is_active')
+        extra_kwargs = {
+            'email': {'required': False},
+            'name': {'required': False},
+            'surname': {'required': False},
+            'description': {'required': False, 'allow_blank': True},
+            'is_active': {'required': False},
+        }
+
+    def update(self, instance, validated_data):
+        old_image = instance.profile_image
+        updated = super().update(instance, validated_data)
+        new_image_name = updated.profile_image.name if updated.profile_image else None
+        if 'profile_image' in validated_data and old_image and old_image.name != new_image_name:
+            old_image.delete(save=False)
+        return updated
     
 
 class CreateBarberAvailabilitySerializer(BarberValidationMixin, AvailabilityValidationMixin, serializers.Serializer):
@@ -163,6 +187,12 @@ class CreateBarberAvailabilitySerializer(BarberValidationMixin, AvailabilityVali
 
         if end_date < start_date:
             raise serializers.ValidationError("end_date cannot be before start_date")
+
+        if start_date < timezone.localdate():
+            raise serializers.ValidationError('Availability cannot be created in the past.')
+
+        if attrs['end_time'] <= attrs['start_time']:
+            raise serializers.ValidationError('end_time must be after start_time.')
         
         attrs['end_date'] = end_date  # ensure always present and >= start
         attrs['slot_interval'] = attrs.get('slot_interval', 30)
@@ -221,6 +251,8 @@ class UpdateBarberAvailabilitySerializer(BarberValidationMixin, AvailabilityVali
     def validate(self, attrs):
         attrs = self.validate_barber(attrs)
         attrs = self.validate_find_availability(attrs)
+        if attrs['end_time'] <= attrs['start_time']:
+            raise serializers.ValidationError('end_time must be after start_time.')
         attrs['slot_interval'] = attrs.get('slot_interval', 30)
         return attrs
 
@@ -249,4 +281,3 @@ class DeleteBarberAvailabilitySerializer(BarberValidationMixin, AvailabilityVali
 
     def delete(self):
         self.validated_data['availability'].delete()
-

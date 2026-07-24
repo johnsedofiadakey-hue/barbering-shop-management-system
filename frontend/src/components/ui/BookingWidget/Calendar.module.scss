@@ -1,0 +1,95 @@
+@use '@styles/variables.module.scss' as *;
+
+.calendar {
+  width: 100%;
+  max-width: 400px;
+  background: rgba(22, 18, 9, 0.4);
+  border: 1px solid $border-surface;
+  border-radius: $border-radius-panel;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    .currentMonth {
+      font-weight: 600;
+      font-size: 1.6rem;
+      color: $text-strong;
+    }
+
+    .navButton {
+      background: transparent;
+      border: none;
+      color: $text-muted;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba(197, 160, 89, 0.1);
+        color: $color-gold;
+      }
+    }
+  }
+
+  .daysRow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: 500;
+    color: $text-dim;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+    }
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.4rem;
+    color: $text-body;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+
+    &:hover:not(.disabled):not(.past) {
+      border-color: $color-gold;
+      background: rgba(197, 160, 89, 0.1);
+    }
+
+    &.disabled, &.past {
+      color: $text-faint;
+      cursor: not-allowed;
+    }
+
+    &.selected {
+      background: $color-gold;
+      color: $color-ink-on-gold;
+      font-weight: 600;
+      box-shadow: 0 0 10px rgba(197, 160, 89, 0.4);
+    }
+  }
+}

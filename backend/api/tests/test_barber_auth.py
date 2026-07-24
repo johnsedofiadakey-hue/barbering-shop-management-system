@@ -1,20 +1,21 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from unittest.mock import patch
+from django.test import override_settings
 from django.urls import reverse
 from django.core import mail
 from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
 import re
 from api.models import User, Barber, Roles
 
-@patch('django.core.mail.send_mail', return_value=1) 
+@patch('django.core.mail.send_mail', return_value=1)
 class BarberAuthFlowTest(APITestCase):
     """
     Tests for barber invitation and registration flows.
     """
     def setUp(self):
         self.invite_url = reverse('invite_barber')
-        self.login_url = reverse('login_user')
         self.register_url = 'register_barber'
 
         # User data for admin
@@ -34,8 +35,7 @@ class BarberAuthFlowTest(APITestCase):
         """
         Helper to authenticate admin
         """
-        response = self.client.post(self.login_url, {'username': self.admin_username, 'password': self.admin_password}, format='json')
-        token = response.data.get('token')['access_token']
+        token = str(RefreshToken.for_user(self.admin).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
 
@@ -58,9 +58,13 @@ class BarberAuthFlowTest(APITestCase):
         return response, match.group('uidb64'), match.group('token')
     
 
-    def test_register_barber_success(self, mock_send_mail):
+    @override_settings(FIREBASE_AUTH_ENABLED=True, FIREBASE_PROJECT_ID='barberingsalonmanager')
+    @patch('firebase_admin.auth.verify_id_token', return_value={'uid': 'firebase-uid-newbarber'})
+    @patch('firebase_admin.get_app', return_value=object())
+    def test_register_barber_success(self, _get_app, _verify_id_token, mock_send_mail):
         """
-        A barber can register successfully using a valid uid and token.
+        A barber can register successfully using a valid uid and token, authenticating with a
+        Firebase-verified identity (created client-side) instead of a Django password.
         """
         email = 'registerbarber@example.com'
         response, uid, token = self.invite_barber(email)
@@ -70,8 +74,7 @@ class BarberAuthFlowTest(APITestCase):
         register_url = reverse(self.register_url, kwargs={'uidb64': uid, 'token': token})
 
         data = {
-            'username': 'newbarbertest',
-            'password': 'BarberPass123!',
+            'id_token': 'verified-token',
             'name': 'test name',
             'surname': 'test surname'
         }
@@ -84,6 +87,8 @@ class BarberAuthFlowTest(APITestCase):
         self.assertIsNotNone(barber)
         self.assertTrue(barber.is_active)
         self.assertEqual(barber.role, Roles.BARBER.value)
+        self.assertEqual(barber.firebase_uid, 'firebase-uid-newbarber')
+        self.assertFalse(barber.has_usable_password())
 
         # Test correct saving of name and surname:
         self.assertEqual(barber.name, 'test name')
@@ -100,7 +105,7 @@ class BarberAuthFlowTest(APITestCase):
         
         register_url = reverse(self.register_url, kwargs={'uidb64': 'invalid-uid', 'token': token})
 
-        data = {'username': 'newbarbertest', 'password': 'BarberPass123!', 'name': 'test name', 'surname': 'test surname'}
+        data = {'id_token': 'verified-token', 'name': 'test name', 'surname': 'test surname'}
         response = self.client.post(register_url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -117,7 +122,7 @@ class BarberAuthFlowTest(APITestCase):
         
         register_url = reverse(self.register_url, kwargs={'uidb64': uid, 'token': 'invalid-token'})
 
-        data = {'username': 'newbarbertest', 'password': 'BarberPass123!', 'name': 'test name', 'surname': 'test surname'}
+        data = {'id_token': 'verified-token', 'name': 'test name', 'surname': 'test surname'}
         response = self.client.post(register_url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

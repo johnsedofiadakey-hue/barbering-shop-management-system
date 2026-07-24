@@ -2,7 +2,7 @@ import styles from './RadialChart.module.scss';
 
 const RADIUS = 100 / (Math.PI * 2);
 
-export default function RadialChart({ value, max = 5, color = '#fed54f', size = 80 }) {
+export default function RadialChart({ value, max = 5, color = '#c5a059', size = 80 }) {
   return (
     <svg
       viewBox="0 0 36 36"

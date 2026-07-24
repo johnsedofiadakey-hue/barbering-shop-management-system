@@ -1,59 +1,122 @@
-// Main Colors
-$color-primary: #1c1712; // warm near-black (chrome bg + dark ink text)
-$color-secondary: #ece4d4; // warm ivory (headings-on-dark, light chip bg)
-$color-tertiary: #cdbfa0; // warm light gold-gray (muted light surfaces)
-$color-light: #f7f1e6; // warm near-white (light text + light surfaces)
-$color-accent: #b8842a; // gold brand accent
-$color-muted: #8f8672; // warm muted gray-brown
-$color-lighter: #2f2718; // dark hover shade
-$color-main: #100d0a; // page canvas, richest near-black
+// ============================================================
+// Dark Charcoal + Gold system (see /design-handoff/README.md)
+// ============================================================
 
-// Gold accent tokens
-$color-gold: #c9952f; // primary gold (CTAs, brand highlights)
-$color-gold-strong: #e6b545; // brighter gold for hover/emphasis
+// Core palette
+$color-main: #0b0a09; // page canvas — deepest, behind everything
+$color-primary: #111010; // chrome bg (header/sidebar); also "text on gold" (#1a140b) role below
+$color-accent: #c5a059; // gold — active nav bg, primary accents
+$color-gold: #c5a059; // primary gold — CTAs, icons, stars
+$color-gold-strong: #d4b171; // gold hover / emphasis
+$color-secondary: #ece4d4; // primary heading/text on dark
+$color-on-dark: #f4eede; // brightest ivory — big numbers, H1
+$color-muted: #8f887c; // secondary / label text (warm)
+$color-ink-on-gold: #1a140b; // dark text/icon used on gold-filled elements (active nav, gold buttons)
 
-// Icon colors
-$color-icon: #dcb15a; // gold icon-circle bg
-$color-rating: #e2a730; // deeper amber-gold for stars
+// Elevated surfaces (warm charcoal). Cards use a subtle top-to-bottom gradient:
+$color-surface-top: #181410; // gradient start
+$color-surface-bottom: #141109; // gradient end
+// -> background: linear-gradient(180deg, $color-surface-top 0%, $color-surface-bottom 100%);
 
-// Card colors
-$color-card: #f4f2ee;
-$color-card-darker: #efebe8;
-$color-card-dark: #efdc9f;
+$color-surface-panel-top: #161209; // large panels (Barbers table container, login card)
+$color-surface-panel-bottom: #120f08;
 
-// Dark surface tokens (for dark-context cards, e.g. the public marketing pages)
-$color-surface-dark: #1a1510;
-$color-surface-dark-alt: #221b13;
-$color-on-dark: #f3ece0;
+$color-surface-inset: #0f0c07; // input fields, insets
+$color-icon-chip-bg: #211a10; // gold icon circle background on dark
+$color-footer-bg: #0d0b08;
+$color-table-head-bg: #17120a; // table header row background
+$color-row-hover-bg: #181209; // table row hover
 
-// Borders/Shadows
-$border: #5a4c35;
-$border-light: #bab8b8;
-$border-error: #fba4a4;
-$border-hover: #d4af37;
-$border-dark: #3d3323; // border tone for dark-surface cards
-$border-radius: 8px;
+// Text
+$text-strong: #f4eede; // H1, big stat numbers
+$text-body: #c9c2b5; // body copy
+$text-muted: #8f887c; // labels, secondary
+$text-dim: #6f695f; // footer, hints
+$text-faint: #5f5849; // footer icons, "Est. 2025"
+
+// Borders (warm, low-contrast)
+$border-hair: #201a13; // chrome dividers (sidebar/header/footer edges)
+$border-surface: #29221a; // stat card border
+$border-panel: #2b241a; // large panel border
+$border-subtle: #2c2419; // buttons, inputs, action btns
+$border-gold-dim: #3a2f1c; // gold-tinted borders (icon chips, avatars, active toggles)
+$border-row: #1e1810; // table row separators
+
+// Legacy variable names kept for back-compat, re-mapped into the new system
+// (retire gradually as page-level files are swept — see design-handoff task)
+$color-tertiary: $text-body;
+$color-light: $text-strong;
+$color-lighter: #1f1a13; // generic dark hover surface
+$color-card: $color-surface-top; // flat fallback where a gradient isn't practical
+$color-card-darker: $color-surface-bottom;
+$color-card-dark: $color-table-head-bg;
+$color-icon: $color-gold; // gold icon-circle bg
+$color-rating: $color-gold; // filled star color
+$border: $border-hair;
+$border-light: $border-subtle;
+$border-dark: $border-surface;
+$border-hover: $color-gold; // gold hover/active border
+$border-error: #d98a7a;
+
+$color-placeholder: #4a463d;
+
+// Button-specific surface tones
+$color-btn-bg: #191309;
+$color-btn-hover-bg: #1f180d;
+$color-btn-text: #d7d0c3;
+$color-danger-border: #a5563f;
+$color-danger-bg: #211210;
+
+$border-radius: 10px; // buttons/inputs
+$border-radius-lg: 16px; // cards
+$border-radius-panel: 18px; // large panels
+$border-radius-pill: 20px; // pills/tags
+
+// Typography
+$font-heading: 'Schibsted Grotesk', sans-serif; // H1/H2, big stat numbers, brand wordmark
+$font-body: 'Hanken Grotesk', sans-serif; // body, UI, buttons, labels
 
 // Error colors
-$color-error-bg: #fae1e1;
-$color-error: #f44;
+$color-error-bg: rgba(217, 138, 122, 0.12);
+$color-error: #d98a7a;
 
-// Tag colors
-$color-tag-green-bg: #e9f9eb;
-$color-tag-green-text: #23863a;
-$color-tag-green-border: #aae3b7;
+// Status tag colors (dark-friendly, muted)
+$tag-active-bg: rgba(120, 158, 108, 0.12);
+$tag-active-text: #94c07f;
+$tag-active-border: rgba(120, 158, 108, 0.32);
 
-$color-tag-yellow-bg: #faf2dc;
-$color-tag-yellow-text: #9d6b07;
-$color-tag-yellow-border: #f8cd6f;
+$tag-invited-bg: rgba(197, 160, 89, 0.12);
+$tag-invited-text: #d4b171;
+$tag-invited-border: rgba(197, 160, 89, 0.34);
 
-$color-tag-blue-bg: #e6f0fa;
-$color-tag-blue-text: #1765ad;
-$color-tag-blue-border: #85b6e2;
+$tag-info-bg: rgba(110, 148, 194, 0.12);
+$tag-info-text: #8fb3dd;
+$tag-info-border: rgba(110, 148, 194, 0.32);
 
-$color-tag-red-bg: $color-error-bg;
-$color-tag-red-text: $color-error;
-$color-tag-red-border: $border-error;
+$tag-danger-bg: rgba(197, 106, 89, 0.12);
+$tag-danger-text: #d99a86;
+$tag-danger-border: rgba(197, 106, 89, 0.34);
+
+// Legacy tag aliases (Tag component currently keys on green/yellow/blue/red)
+$color-tag-green-bg: $tag-active-bg;
+$color-tag-green-text: $tag-active-text;
+$color-tag-green-border: $tag-active-border;
+
+$color-tag-yellow-bg: $tag-invited-bg;
+$color-tag-yellow-text: $tag-invited-text;
+$color-tag-yellow-border: $tag-invited-border;
+
+$color-tag-blue-bg: $tag-info-bg;
+$color-tag-blue-text: $tag-info-text;
+$color-tag-blue-border: $tag-info-border;
+
+$color-tag-red-bg: $tag-danger-bg;
+$color-tag-red-text: $tag-danger-text;
+$color-tag-red-border: $tag-danger-border;
+
+// Dark surface tokens (kept for pages built during the earlier dark-theme pass)
+$color-surface-dark: $color-surface-top;
+$color-surface-dark-alt: #1e1e1e;
 
 // Screen sizes
 $bp-huge: 126.87em; //2030px

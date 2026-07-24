@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
+from rest_framework_simplejwt.tokens import RefreshToken
 from api.models import Client, Barber, Admin
 from api.models import Roles
 
@@ -16,11 +17,7 @@ class GetUserViewTests(APITestCase):
 
 
     def authenticate_user(self, user):
-        login_url = reverse('login_user')
-        data = {'username': user.username, 'password': self.password}
-        response = self.client.post(login_url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        token = response.data['token']['access_token']
+        token = str(RefreshToken.for_user(user).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
 

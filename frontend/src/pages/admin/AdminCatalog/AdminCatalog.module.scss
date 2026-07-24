@@ -1,0 +1,367 @@
+@use '@styles/variables.module.scss' as *;
+
+.admin-catalog {
+  width: min(100%, 144rem);
+  margin: 0 auto;
+  padding: 4.2rem;
+}
+
+.hero {
+  margin-bottom: 2.4rem;
+  padding: clamp(2.4rem, 4vw, 4.8rem);
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 3rem;
+  border: 1px solid $border-gold-dim;
+  border-radius: 2.4rem;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(197, 160, 89, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(197, 160, 89, 0.09), transparent 45%),
+    $color-surface-top;
+
+  h1 {
+    margin-top: 0.8rem;
+    color: $text-strong;
+    font-size: clamp(3rem, 5vw, 5.4rem);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  p {
+    max-width: 64rem;
+    margin-top: 1.4rem;
+    color: $text-muted;
+    font-size: 1.4rem;
+    line-height: 1.6;
+  }
+}
+
+.eyebrow,
+.section-heading > div > span {
+  color: $color-gold;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero-actions,
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.catalog-section {
+  margin-top: 2.4rem;
+  padding: 2.4rem;
+  border: 1px solid $border-surface;
+  border-radius: 2.2rem;
+  background: $color-surface-top;
+}
+
+.section-heading {
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+
+  h2 {
+    margin-top: 0.5rem;
+    color: $text-strong;
+    font-size: 2.5rem;
+  }
+
+  > p {
+    color: $text-dim;
+    font-size: 1.15rem;
+  }
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.service-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid $border-surface;
+  border-radius: 1.7rem;
+  background: $color-surface-bottom;
+}
+
+.media {
+  position: relative;
+  height: 20rem;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(197, 160, 89, 0.12), $color-primary);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.media-placeholder {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  color: $text-dim;
+
+  span {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
+
+.barber-badge {
+  position: absolute;
+  left: 1.2rem;
+  bottom: 1.2rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(8, 7, 6, 0.76);
+  color: $text-strong;
+  font-size: 1rem;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+}
+
+.card-body {
+  padding: 1.8rem;
+
+  h3 {
+    margin-top: 1.3rem;
+    color: $text-strong;
+    font-size: 2rem;
+  }
+
+  > p {
+    min-height: 4.3rem;
+    margin: 0.7rem 0 1.7rem;
+    color: $text-muted;
+    font-size: 1.2rem;
+    line-height: 1.55;
+  }
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: $color-gold;
+  font-size: 1.1rem;
+
+  strong {
+    color: $text-strong;
+  }
+}
+
+.card-actions {
+  justify-content: space-between;
+}
+
+.cut-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.transformation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.transformation-card {
+  overflow: hidden;
+  border: 1px solid $border-surface;
+  border-radius: 1.7rem;
+  background: $color-surface-bottom;
+}
+
+.transformation-images {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  figure {
+    position: relative;
+    height: 27rem;
+    overflow: hidden;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  figcaption {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(8, 7, 6, 0.76);
+    color: $text-strong;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}
+
+.transformation-copy {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h3 {
+    color: $text-strong;
+    font-size: 1.7rem;
+  }
+
+  p {
+    margin-top: 0.35rem;
+    color: $text-muted;
+    font-size: 1.05rem;
+  }
+}
+
+.cut-card {
+  position: relative;
+  min-height: 31rem;
+  overflow: hidden;
+  border-radius: 1.7rem;
+  background: $color-primary;
+
+  > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.cut-overlay {
+  position: absolute;
+  inset: 0;
+  padding: 1.5rem;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  background: linear-gradient(180deg, transparent 35%, rgba(8, 7, 6, 0.94));
+
+  span {
+    color: $color-gold;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  h3 {
+    margin: 0.4rem 0;
+    color: $text-strong;
+    font-size: 1.8rem;
+  }
+
+  strong {
+    color: $text-muted;
+    font-size: 1.1rem;
+  }
+}
+
+.empty-state {
+  min-height: 22rem;
+  padding: 3rem;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  border: 1px dashed $border-gold-dim;
+  border-radius: 1.7rem;
+  color: $text-dim;
+  text-align: center;
+
+  h3 {
+    color: $text-strong;
+    font-size: 2rem;
+  }
+
+  p {
+    max-width: 42rem;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: $bp-large) {
+  .service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cut-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .transformation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .admin-catalog {
+    padding: 1.4rem;
+  }
+
+  .hero,
+  .section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+
+    > * {
+      width: 100%;
+    }
+  }
+
+  .catalog-section {
+    padding: 1.4rem;
+  }
+
+  .service-grid,
+  .cut-grid,
+  .transformation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .media {
+    height: 23rem;
+  }
+
+  .cut-card {
+    min-height: 40rem;
+  }
+
+  .transformation-images figure {
+    height: 23rem;
+  }
+}

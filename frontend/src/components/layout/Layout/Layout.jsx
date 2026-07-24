@@ -7,10 +7,10 @@ import Sidebar from '@components/layout/Sidebar/Sidebar';
 import Page from '@components/layout/Page/Page';
 
 function Layout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
 
   return (
-    <div className={styles.app}>
+    <div className={`${styles.app} ${profile?.role === 'CLIENT' ? styles.clientApp : ''}`}>
       <Header />
 
       <div className={styles.content}>

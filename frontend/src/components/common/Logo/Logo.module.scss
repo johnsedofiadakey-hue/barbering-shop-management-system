@@ -5,6 +5,11 @@
   align-items: center;
   justify-content: center;
 
+  .crest {
+    border-radius: 9px;
+    box-shadow: 0 0 0 1px $border-subtle;
+  }
+
   &.sm {
     font-size: 1.5rem;
     gap: 0.8rem;
@@ -32,20 +37,21 @@
   }
 
   .text {
-    letter-spacing: 1px;
+    font-family: $font-heading;
+    letter-spacing: -0.02em;
 
     display: flex;
 
     .dark {
-      color: $color-muted;
-      font-weight: 400;
+      color: #7d766a;
+      font-weight: 500;
 
       display: block;
       align-items: center;
     }
 
     .light {
-      color: $color-light;
+      color: $color-secondary;
       font-weight: 700;
     }
   }

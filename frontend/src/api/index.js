@@ -5,6 +5,7 @@ import * as barber from './services/barber';
 import * as client from './services/client';
 import * as pub from './services/public';
 import * as image from './services/image';
+import * as business from './services/business';
 
 const api = {
   instance: axiosInstance,
@@ -14,6 +15,7 @@ const api = {
   client,
   pub,
   image,
+  business,
 };
 
 export default api;

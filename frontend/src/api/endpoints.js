@@ -6,15 +6,14 @@ export const ENDPOINTS = {
   // Auth Routes
   auth: {
     me: '/auth/me/',
-    login: '/auth/login/',
     logout: '/auth/logout/',
     refresh: '/auth/refresh-token/',
     requestOtp: '/auth/otp/request/',
     verifyOtp: '/auth/otp/verify/',
-    resetPassword: '/auth/reset-password/',
+    firebasePhone: '/auth/firebase/phone/',
+    firebaseStaff: '/auth/firebase/staff/',
     registerBarber: (uidb64, token) => `/auth/register/${uidb64}/${token}/`,
     emailFromToken: (uidb64, token) => `/auth/email/${uidb64}/${token}/`,
-    resetPasswordConfirm: (uidb64, token) => `/auth/reset-password/${uidb64}/${token}/`,
   },
 
   // Admin Routes
@@ -27,6 +26,8 @@ export const ENDPOINTS = {
     barber: (barberId) => `/admin/barbers/${barberId}/`,
     barberAvailabilities: (barberId) => `/admin/barbers/${barberId}/availabilities/`,
     barberAvailability: (barberId, availabilityId) => `/admin/barbers/${barberId}/availabilities/${availabilityId}/`,
+    services: '/admin/services/',
+    service: (serviceId) => `/admin/services/${serviceId}/`,
   },
 
   // Barber Routes
@@ -34,6 +35,7 @@ export const ENDPOINTS = {
     profile: '/barber/profile/',
     availabilities: '/barber/availabilities/',
     appointments: '/barber/appointments/',
+    appointment: (appointmentId) => `/barber/appointments/${appointmentId}/`,
     reviews: '/barber/reviews/',
     services: '/barber/services/',
     service: (serviceId) => `/barber/services/${serviceId}/`,
@@ -48,6 +50,7 @@ export const ENDPOINTS = {
     createReview: (barberId) => `/client/reviews/barbers/${barberId}/`,
     createAppointment: (barberId) => `/client/appointments/barbers/${barberId}/`,
     appointment: (appointmentId) => `/client/appointments/${appointmentId}/`,
+    rescheduleAppointment: (appointmentId) => `/client/appointments/${appointmentId}/`,
     barbers: '/client/barbers/',
   },
 
@@ -59,10 +62,20 @@ export const ENDPOINTS = {
     barberProfile: (barberId) => `/public/barbers/${barberId}/profile/`,
     barberServices: (barberId) => `/public/barbers/${barberId}/services/`,
     clientProfile: (clientId) => `/public/clients/${clientId}/profile/`,
+    shop: '/public/shop/',
+    portfolio: '/public/portfolio/',
+    beforeAfter: '/public/before-after/',
   },
 
   // Image Routes
   image: {
     profile: '/image/profile/',
+  },
+  business: {
+    shop: '/admin/shop/',
+    portfolio: '/admin/portfolio/',
+    portfolioItem: (itemId) => `/admin/portfolio/${itemId}/`,
+    beforeAfter: '/admin/before-after/',
+    beforeAfterItem: (itemId) => `/admin/before-after/${itemId}/`,
   },
 };

@@ -48,6 +48,11 @@ export async function cancelClientAppointment(appointmentId) {
   return data;
 }
 
+export async function rescheduleClientAppointment(appointmentId, appointmentData) {
+  const { data } = await api.instance.patch(ENDPOINTS.client.rescheduleAppointment(appointmentId), appointmentData);
+  return data;
+}
+
 /**
  * Retrieves the reviews submitted by the current client.
  */

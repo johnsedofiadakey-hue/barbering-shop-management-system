@@ -1,5 +1,5 @@
 @use '@styles/variables.module.scss' as *;
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
 
 * {
   margin: 0;
@@ -24,10 +24,73 @@ html {
 }
 
 body {
-  font-family: 'Share Tech', sans-serif;
+  font-family: $font-body;
   font-weight: 400;
   line-height: 1.6;
+  background: $color-main;
+  color: $text-body;
 
   // Only works if there is nothing absolutely positioned in relation to body
   overflow-x: hidden;
+}
+
+// Sophisticated, modern sans for premium page headlines (H1/H2-level titles only — never body/UI text)
+h1,
+h2 {
+  font-family: $font-heading;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: rgba(197, 160, 89, 0.3);
+  color: $text-strong;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2b241b;
+  border-radius: 20px;
+  border: 2px solid $color-main;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+// UI Improvements - Utilities
+.glass-panel {
+  background: rgba(22, 18, 9, 0.85); // Transparent dark charcoal
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, $color-on-dark 0%, $color-gold 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.glow-hover {
+  transition: all 0.3s ease;
+  &:hover {
+    box-shadow: 0 0 15px rgba(197, 160, 89, 0.3);
+    transform: scale(1.02);
+  }
+}
+
+// Skeleton Loader Animation
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
 }

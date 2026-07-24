@@ -2,321 +2,1024 @@
 
 .home {
   width: 100%;
+  min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  background: $color-main;
+  color: $text-body;
+  scroll-behavior: smooth;
 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  background: radial-gradient(ellipse at 50% -10%, rgba(201, 149, 47, 0.12), transparent 60%), $color-main;
-  color: $color-on-dark;
+  main {
+    width: 100%;
+  }
 }
 
-.gold {
-  background: linear-gradient(90deg, $color-gold-strong, $color-gold);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-// --------------- Hero ---------------
-.hero {
-  width: 100%;
-  max-width: 90rem;
-  padding: 7rem 2rem 5rem;
-
+.promo-banner {
+  min-height: 4rem;
+  padding: 0.8rem 2rem;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: $color-ink-on-gold;
+  background: $color-gold;
+  font-size: 1.15rem;
+  font-weight: 700;
   text-align: center;
-  gap: 2rem;
+
+  a {
+    color: $color-ink-on-gold;
+    text-decoration: underline;
+  }
+}
+
+.hero {
+  position: relative;
+  min-height: min(82rem, calc(100dvh - 6.6rem));
+  display: grid;
+  align-items: end;
+  overflow: hidden;
+  border-bottom: 1px solid $border-hair;
+}
+
+.hero-image,
+.hero-shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hero-image {
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-shade {
+  background: linear-gradient(90deg, rgba(9, 8, 7, 0.96) 0%, rgba(9, 8, 7, 0.82) 38%, rgba(9, 8, 7, 0.18) 72%),
+    linear-gradient(0deg, rgba(9, 8, 7, 0.88) 0%, transparent 48%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  width: min(138rem, 100%);
+  margin-inline: auto;
+  padding: clamp(6rem, 9vw, 12rem) clamp(2rem, 6vw, 8rem);
+
+  .kicker {
+    margin-top: 2rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: $text-body;
+  }
+
+  h1 {
+    max-width: 76rem;
+    margin-top: 1.2rem;
+    font-size: clamp(5rem, 7.2vw, 10.2rem);
+    line-height: 0.94;
+    letter-spacing: -0.055em;
+    color: $text-strong;
+
+    span {
+      color: $color-gold;
+    }
+  }
 }
 
 .eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-
-  padding: 0.6rem 1.4rem;
-  border: 1px solid $border-hover;
-  border-radius: 100px;
-
-  color: $color-gold-strong;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.headline {
-  max-width: 55rem;
-  font-size: 4.2rem;
+  color: $color-gold;
+  font-size: 1.15rem;
   font-weight: 700;
-  line-height: 1.15;
-  color: $color-on-dark;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
-.subheadline {
-  max-width: 50rem;
-  font-size: 1.6rem;
-  color: $color-tertiary;
+.hero-copy {
+  max-width: 56rem;
+  margin-top: 2.4rem;
+  color: #d3cbbf;
+  font-size: clamp(1.6rem, 2vw, 1.9rem);
+  line-height: 1.65;
 }
 
-.hero-actions {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-.badges {
+.hero-actions,
+.visit-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 2.5rem;
-  margin-top: 2rem;
+  gap: 1.2rem;
+  margin-top: 3.2rem;
 }
 
-.badge {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  color: $color-muted;
-  font-size: 1.3rem;
-}
+.returning-prompt {
+  margin-top: 1.3rem;
+  color: $text-muted;
+  font-size: 1.15rem;
 
-// --------------- Shared section styles ---------------
-.section-title {
-  font-size: 2.6rem;
-  font-weight: 700;
-  color: $color-on-dark;
-  text-align: center;
-}
-
-.section-subtitle {
-  margin-top: 0.8rem;
-  font-size: 1.4rem;
-  color: $color-tertiary;
-  text-align: center;
-}
-
-// --------------- Cuts of the week ---------------
-.cuts {
-  width: 100%;
-  max-width: 90rem;
-  padding: 4rem 2rem;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.cuts-grid {
-  width: 100%;
-  margin-top: 3rem;
-
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 1.5rem;
-}
-
-.cut-tile {
-  padding: 2.5rem 1.5rem;
-  border: 1px solid $border-dark;
-  border-radius: 12px;
-  background: $color-surface-dark;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-
-  transition:
-    border-color 0.2s,
-    transform 0.2s;
-
-  &:hover {
-    border-color: $border-hover;
-    transform: translateY(-4px);
+  a {
+    color: $color-gold;
+    font-weight: 700;
+    text-decoration: none;
   }
 }
 
-.cut-icon {
-  width: 5.5rem;
-  height: 5.5rem;
-  border-radius: 50%;
-  background: rgba(201, 149, 47, 0.15);
-  color: $color-gold-strong;
+.bookingWidgetWrapper {
+  margin-top: 4rem;
+  max-width: 80rem;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2rem;
+    background: radial-gradient(circle, rgba(234, 197, 137, 0.08) 0%, transparent 60%);
+    border-radius: 2rem;
+    z-index: -1;
+    pointer-events: none;
+  }
+}
 
+.hero-proof {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.8rem 3rem;
+  margin-top: 3rem;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: $text-muted;
+    font-size: 1.3rem;
+  }
 }
 
-.cut-name {
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: $color-on-dark;
+.trust-strip {
+  width: min(138rem, calc(100% - 4rem));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid $border-hair;
+  border-top: 0;
+  background: linear-gradient(90deg, #0e0c09, #12100d, #0e0c09);
+
+  span {
+    min-height: 7rem;
+    padding: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    color: $text-muted;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+
+    &:not(:last-child) {
+      border-right: 1px solid $border-hair;
+    }
+  }
 }
 
-.cut-meta {
+.section {
+  width: min(138rem, 100%);
+  margin-inline: auto;
+  padding: clamp(7rem, 9vw, 12rem) clamp(2rem, 5vw, 6.5rem);
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 4rem;
+  margin-bottom: 4rem;
+
+  h2 {
+    margin-top: 0.8rem;
+    color: $text-strong;
+    font-size: clamp(3.4rem, 5vw, 6rem);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  > p {
+    max-width: 46rem;
+    color: $text-muted;
+    font-size: 1.55rem;
+  }
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.service-card {
+  min-height: 42rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $border-surface;
+  border-radius: 1.8rem;
+  background: linear-gradient(145deg, rgba(197, 160, 89, 0.07), transparent 42%),
+    linear-gradient(155deg, $color-surface-top, $color-surface-bottom);
+}
+
+.service-image-wrap {
+  position: relative;
+  height: 21rem;
+  overflow: hidden;
+  background: $color-surface-bottom;
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+    background: linear-gradient(180deg, transparent 45%, rgba(8, 7, 6, 0.54));
+    pointer-events: none;
+  }
+}
+
+.service-image {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.45s ease;
+}
+
+.service-card:hover .service-image {
+  transform: scale(1.035);
+}
+
+.service-content {
+  flex: 1;
+  padding: 2.2rem;
+  display: flex;
+  flex-direction: column;
+
+  h3 {
+    margin-top: 2.2rem;
+    color: $text-strong;
+    font-size: 2.2rem;
+  }
+
+  > p {
+    margin: 0.8rem 0 2.2rem;
+    color: $text-muted;
+    font-size: 1.35rem;
+    line-height: 1.6;
+  }
+
+  > a {
+    margin-top: auto;
+  }
+}
+
+.service-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 1.2rem;
-  color: $color-muted;
+  gap: 1rem;
+
+  span {
+    color: $color-gold;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    color: $text-strong;
+    font-size: 1.25rem;
+  }
 }
 
-.cut-price {
-  color: $color-gold-strong;
-  font-weight: 700;
+.service-note {
+  margin-top: 1.5rem;
+  color: $text-dim;
+  font-size: 1.15rem;
+  text-align: right;
 }
 
-// --------------- How it works ---------------
-.how-it-works {
-  width: 100%;
-  max-width: 90rem;
-  padding: 4rem 2rem;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.steps-row {
-  width: 100%;
-  margin-top: 3rem;
-
+.lookbook {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-  gap: 2rem;
+  grid-template-columns: 1.14fr 1fr 1fr;
+  gap: 1.6rem;
 }
 
-.step {
+.before-after-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.6rem;
+}
+
+.before-after-card {
+  overflow: hidden;
+  border: 1px solid $border-surface;
+  border-radius: 2rem;
+  background: $color-surface-top;
+}
+
+.before-after-images {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  figure {
+    position: relative;
+    height: 38rem;
+    overflow: hidden;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  figcaption {
+    position: absolute;
+    left: 1.2rem;
+    bottom: 1.2rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(8, 7, 6, 0.8);
+    color: $text-strong;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}
+
+.before-after-copy {
+  padding: 1.8rem;
+
+  h3 {
+    color: $text-strong;
+    font-size: 2rem;
+  }
+
+  p {
+    margin-top: 0.5rem;
+    color: $text-muted;
+    font-size: 1.2rem;
+  }
+}
+
+.cut-card {
   position: relative;
-  padding: 2rem 1.5rem;
-  border: 1px solid $border-dark;
-  border-radius: 12px;
-  background: $color-surface-dark-alt;
+  min-height: 54rem;
+  overflow: hidden;
+  border: 1px solid $border-surface;
+  border-radius: 2rem;
+  background: $color-surface-bottom;
 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.8rem;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  &:hover img {
+    transform: scale(1.035);
+  }
 }
 
-.step-number {
+.cut-card-feature {
+  min-height: 62rem;
+}
+
+.cut-overlay {
   position: absolute;
-  top: -1rem;
-  left: 50%;
-  transform: translateX(-50%);
-
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background: $color-gold;
-  color: $color-primary;
-  font-size: 1.1rem;
-  font-weight: 700;
-
+  inset: auto 0 0;
+  padding: 9rem 2.4rem 2.4rem;
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.step-icon {
-  margin-top: 0.5rem;
-  color: $color-gold-strong;
-}
-
-.step-title {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: $color-on-dark;
-}
-
-.step-text {
-  font-size: 1.2rem;
-  color: $color-tertiary;
-}
-
-// --------------- Meet the team ---------------
-.team {
-  width: 100%;
-  max-width: 90rem;
-  padding: 4rem 2rem;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.team-row {
-  width: 100%;
-  margin-top: 3rem;
-
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  align-items: end;
+  justify-content: space-between;
   gap: 2rem;
+  background: linear-gradient(transparent, rgba(8, 7, 6, 0.96));
+
+  span {
+    color: $color-gold;
+    font-size: 1.15rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  h3 {
+    margin-top: 0.7rem;
+    color: $text-strong;
+    font-size: 2.2rem;
+  }
+
+  p {
+    margin-top: 0.4rem;
+    color: $text-muted;
+    font-size: 1.3rem;
+  }
+
+  strong {
+    flex-shrink: 0;
+    color: $text-strong;
+    font-size: 1.3rem;
+  }
+}
+
+.booking-section {
+  width: 100%;
+  max-width: none;
+  background: linear-gradient(180deg, #100d09, #0b0a09);
+  border-block: 1px solid $border-hair;
+
+  > * {
+    width: min(125rem, 100%);
+    margin-inline: auto;
+  }
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.6rem;
+
+  article {
+    position: relative;
+    min-height: 26rem;
+    padding: 3rem;
+    overflow: hidden;
+    border: 1px solid $border-surface;
+    border-radius: 1.8rem;
+    background: linear-gradient(150deg, $color-surface-top, $color-surface-bottom);
+    color: $color-gold;
+
+    > span {
+      position: absolute;
+      top: 1.6rem;
+      right: 2rem;
+      color: #3d3428;
+      font: 700 5rem/1 $font-heading;
+    }
+
+    h3 {
+      margin-top: 4.2rem;
+      color: $text-strong;
+      font-size: 2rem;
+    }
+
+    p {
+      margin-top: 1rem;
+      color: $text-muted;
+      font-size: 1.4rem;
+      line-height: 1.6;
+    }
+  }
+}
+
+.benefits-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(4rem, 8vw, 12rem);
+  align-items: center;
+}
+
+.benefit-lead {
+  h2 {
+    max-width: 62rem;
+    margin-top: 1rem;
+    color: $text-strong;
+    font-size: clamp(3.8rem, 5.8vw, 7rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+  }
+
+  p {
+    max-width: 54rem;
+    margin: 2rem 0 3rem;
+    color: $text-muted;
+    font-size: 1.5rem;
+  }
+}
+
+.benefit-list {
+  display: grid;
+  gap: 1rem;
+
+  article {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.6rem;
+    color: $color-gold;
+    border: 1px solid $border-subtle;
+    border-radius: 1.6rem;
+    background: $color-surface-inset;
+
+    h3 {
+      color: $text-strong;
+      font-size: 1.7rem;
+    }
+
+    p {
+      margin-top: 0.4rem;
+      color: $text-muted;
+      font-size: 1.3rem;
+    }
+  }
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.6rem;
 }
 
 .team-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 1.8rem;
   padding: 2rem;
-  border: 1px solid $border-dark;
-  border-radius: 12px;
-  background: $color-surface-dark;
+  border: 1px solid $border-surface;
+  border-radius: 1.8rem;
+  background: linear-gradient(150deg, $color-surface-top, $color-surface-bottom);
 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.8rem;
-  min-width: 14rem;
+  h3 {
+    color: $text-strong;
+    font-size: 1.7rem;
+  }
+
+  p {
+    color: $text-muted;
+    font-size: 1.25rem;
+  }
+
+  > span {
+    display: flex;
+    gap: 0.4rem;
+    color: $color-gold;
+    font-size: 1.3rem;
+  }
 }
 
-.team-name {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: $color-on-dark;
-}
-
-.team-rating {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: $color-rating;
-  font-size: 1.2rem;
-}
-
-// --------------- Final CTA ---------------
-.final-cta {
+.testimonial-section {
   width: 100%;
-  padding: 6rem 2rem 8rem;
+  max-width: none;
+  background: radial-gradient(circle at 12% 20%, rgba(197, 160, 89, 0.1), transparent 30%), #0b0a09;
+  border-block: 1px solid $border-hair;
 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2rem;
+  > * {
+    width: min(125rem, 100%);
+    margin-inline: auto;
+  }
 }
 
-.final-cta-title {
-  font-size: 2.4rem;
-  font-weight: 700;
-  color: $color-on-dark;
+.testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+
+  blockquote {
+    min-height: 25rem;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid $border-surface;
+    border-radius: 1.8rem;
+    background: linear-gradient(155deg, $color-surface-panel-top, $color-surface-panel-bottom);
+
+    > p {
+      margin: 2rem 0;
+      color: $text-strong;
+      font: 500 1.75rem/1.55 $font-heading;
+    }
+
+    footer {
+      margin-top: auto;
+      display: grid;
+
+      strong {
+        color: $text-body;
+        font-size: 1.2rem;
+      }
+
+      span {
+        color: $text-dim;
+        font-size: 1.1rem;
+      }
+    }
+  }
+}
+
+.stars {
+  color: $color-gold;
+  font-size: 1.35rem;
+  letter-spacing: 0.15em;
+}
+
+.faq-section {
+  display: grid;
+  grid-template-columns: minmax(25rem, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(4rem, 8vw, 12rem);
+}
+
+.faq-heading {
+  h2 {
+    margin-top: 1rem;
+    color: $text-strong;
+    font-size: clamp(4rem, 6vw, 7rem);
+    line-height: 1;
+  }
+
+  p {
+    max-width: 40rem;
+    margin-top: 1.5rem;
+    color: $text-muted;
+    font-size: 1.4rem;
+  }
+}
+
+.faq-list {
+  display: grid;
+  align-content: start;
+
+  details {
+    padding: 2rem 0;
+    border-bottom: 1px solid $border-panel;
+
+    &:first-child {
+      border-top: 1px solid $border-panel;
+    }
+
+    &[open] summary {
+      color: $color-gold;
+    }
+  }
+
+  summary {
+    color: $text-strong;
+    font-size: 1.6rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  p {
+    max-width: 66rem;
+    padding: 1.4rem 2rem 0 0;
+    color: $text-muted;
+    font-size: 1.35rem;
+    line-height: 1.7;
+  }
+}
+
+.visit-section {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 4rem 7rem;
+  margin-bottom: 4rem;
+  border: 1px solid $border-panel;
+  border-radius: 2.4rem;
+  background: radial-gradient(circle at 80% 15%, rgba(197, 160, 89, 0.14), transparent 36%),
+    linear-gradient(145deg, $color-surface-panel-top, $color-surface-panel-bottom);
+
+  h2 {
+    max-width: 62rem;
+    margin-top: 1rem;
+    color: $text-strong;
+    font-size: clamp(3.5rem, 5vw, 6rem);
+    line-height: 1.04;
+  }
+
+  > div > p {
+    max-width: 58rem;
+    margin-top: 2rem;
+    color: $text-muted;
+    font-size: 1.5rem;
+  }
+}
+
+.visit-details {
+  display: grid;
+  align-content: center;
+  gap: 1.5rem;
+
+  p {
+    display: flex;
+    align-items: center;
+    gap: 1.4rem;
+    padding: 1.5rem;
+    border: 1px solid $border-subtle;
+    border-radius: 1.4rem;
+    color: $color-gold;
+  }
+
+  span {
+    display: grid;
+    color: $text-body;
+    font-size: 1.4rem;
+  }
+
+  small {
+    color: $text-muted;
+    font-size: 1.05rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .hours-row {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    gap: 1rem;
+
+    b {
+      color: $text-muted;
+      font-weight: 500;
+    }
+  }
+}
+
+.visit-actions {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
+.final-cta {
+  margin-bottom: 4rem;
+  display: grid;
+  justify-items: center;
   text-align: center;
+  border: 1px solid $border-gold-dim;
+  border-radius: 2.4rem;
+  background: radial-gradient(circle at 50% 0%, rgba(197, 160, 89, 0.2), transparent 42%),
+    linear-gradient(160deg, $color-surface-panel-top, #0d0b08);
+
+  h2 {
+    max-width: 86rem;
+    margin-top: 1rem;
+    color: $text-strong;
+    font-size: clamp(4rem, 7vw, 8rem);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+  }
+
+  > p {
+    max-width: 60rem;
+    margin-top: 2rem;
+    color: $text-muted;
+    font-size: 1.5rem;
+  }
+
+  > div {
+    margin-top: 3rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  > small {
+    margin-top: 3rem;
+    color: $text-dim;
+    font-size: 1.1rem;
+
+    a {
+      color: $color-gold;
+    }
+  }
+}
+
+.mobile-dock {
+  display: none;
+}
+
+@media (max-width: $bp-medium) {
+  .trust-strip {
+    grid-template-columns: repeat(2, 1fr);
+
+    span:nth-child(2) {
+      border-right: 0;
+    }
+
+    span:nth-child(-n + 2) {
+      border-bottom: 1px solid $border-hair;
+    }
+  }
+
+  .service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lookbook {
+    grid-template-columns: repeat(3, minmax(26rem, 1fr));
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 1rem;
+  }
+
+  .cut-card,
+  .cut-card-feature {
+    min-height: 50rem;
+    scroll-snap-align: start;
+  }
+
+  .team-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .benefits-section,
+  .faq-section {
+    grid-template-columns: 1fr;
+  }
+
+  .testimonial-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: $bp-medium-small) {
-  .headline {
-    font-size: 3rem;
+  .promo-banner {
+    justify-content: space-between;
+    text-align: left;
   }
 
-  .hero-actions {
-    flex-direction: column;
+  .hero {
+    min-height: calc(100dvh - 6.6rem);
+    align-items: end;
+  }
+
+  .hero-image {
+    object-position: 64% center;
+  }
+
+  .hero-shade {
+    background: linear-gradient(0deg, rgba(8, 7, 6, 0.98) 0%, rgba(8, 7, 6, 0.82) 52%, rgba(8, 7, 6, 0.18) 100%),
+      linear-gradient(90deg, rgba(8, 7, 6, 0.35), transparent);
+  }
+
+  .hero-content {
+    padding: 10rem 2rem 4rem;
+
+    h1 {
+      font-size: clamp(4.8rem, 15vw, 7.2rem);
+    }
+  }
+
+  .hero-actions > * {
     width: 100%;
+  }
+
+  .trust-strip {
+    width: 100%;
+    margin: 0;
+  }
+
+  .hero-proof {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .section-heading {
+    display: grid;
+    gap: 1.6rem;
+    margin-bottom: 2.8rem;
+  }
+
+  .lookbook {
+    margin-inline: -2rem;
+    padding-inline: 2rem;
+    grid-template-columns: repeat(3, 82vw);
+  }
+
+  .before-after-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .before-after-images figure {
+    height: 28rem;
+  }
+
+  .service-grid,
+  .testimonial-grid {
+    margin-inline: -2rem;
+    padding-inline: 2rem;
+    display: grid;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 82vw;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .service-card,
+  .testimonial-grid blockquote {
+    scroll-snap-align: start;
+  }
+
+  .service-note {
+    text-align: left;
+  }
+
+  .cut-card,
+  .cut-card-feature {
+    min-height: 56rem;
+  }
+
+  .steps {
+    grid-template-columns: 1fr;
+
+    article {
+      min-height: auto;
+    }
+  }
+
+  .team-card {
+    grid-template-columns: auto 1fr auto;
+
+    > a {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+  }
+
+  .visit-section {
+    margin: 0 1.5rem 9rem;
+    width: auto;
+    grid-template-columns: 1fr;
+    padding: 4rem 2rem;
+    border-radius: 2rem;
+  }
+
+  .benefit-lead > a {
+    width: 100%;
+  }
+
+  .faq-list summary {
+    padding-right: 1rem;
+  }
+
+  .final-cta {
+    width: auto;
+    margin: 0 1.5rem 10rem;
+    padding: 5rem 2rem;
+    border-radius: 2rem;
+
+    > div,
+    > div > * {
+      width: 100%;
+    }
+  }
+
+  .visit-actions {
+    display: grid;
 
     > * {
       width: 100%;
     }
+  }
+
+  .mobile-dock {
+    position: fixed;
+    z-index: 100;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1rem 1rem 1.5rem;
+    border: 1px solid $border-gold-dim;
+    border-radius: 1.6rem;
+    background: rgba(17, 16, 16, 0.94);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.48);
+
+    div {
+      display: grid;
+    }
+
+    small {
+      color: $text-muted;
+      font-size: 1rem;
+    }
+
+    strong {
+      color: $text-strong;
+      font-size: 1.3rem;
+    }
+  }
+}
+
+@media (max-width: $bp-smallest) {
+  .hero-proof {
+    grid-template-columns: 1fr;
+  }
+
+  .cut-overlay {
+    display: grid;
   }
 }

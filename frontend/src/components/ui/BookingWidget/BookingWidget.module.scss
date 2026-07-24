@@ -1,0 +1,70 @@
+@use '@styles/variables.module.scss' as *;
+
+.bookingWidget {
+  display: flex;
+  flex-direction: column;
+  padding: 3rem;
+  border-radius: $border-radius-panel;
+  border: 1px solid $border-surface;
+  gap: 3rem;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+
+  .layout {
+    display: flex;
+    gap: 4rem;
+    flex-wrap: wrap;
+
+    .calendarSection {
+      flex: 1;
+      min-width: 300px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .timeSection {
+      flex: 1.5;
+      min-width: 300px;
+    }
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 2rem;
+    border-top: 1px solid $border-surface;
+    flex-wrap: wrap;
+    gap: 2rem;
+
+    .selectionSummary {
+      font-size: 1.6rem;
+      font-weight: 500;
+      color: $text-body;
+
+      .hint {
+        color: $text-muted;
+        font-size: 1.4rem;
+      }
+    }
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .bookingWidget {
+    padding: 2rem;
+    gap: 2rem;
+
+    .layout {
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .footer {
+      flex-direction: column;
+      align-items: stretch;
+      text-align: center;
+    }
+  }
+}

@@ -2,8 +2,10 @@ import datetime
 from decimal import Decimal
 from django.urls import reverse
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 from api.models import (
     Admin,
     Barber,
@@ -68,22 +70,12 @@ class AdminProfileTest(APITestCase):
 
 
     def login_as_admin(self):
-        resp = self.client.post(
-            reverse("login_user"),
-            {"username": self.admin.username, "password": self.admin_password},
-            format="json",
-        )
-        token = resp.data["token"]["access_token"]
+        token = str(RefreshToken.for_user(self.admin).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
 
     def login_as_client(self):
-        resp = self.client.post(
-            reverse("login_user"),
-            {"username": self.client_user.username, "password": "ClientPw11"},
-            format="json",
-        )
-        token = resp.data["token"]["access_token"]
+        token = str(RefreshToken.for_user(self.client_user).access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
 
@@ -310,6 +302,25 @@ class AdminProfileTest(APITestCase):
         resp = self.client.delete(url)
         self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Barber.objects.filter(pk=self.barber.pk).exists())
+
+    def test_admin_can_update_barber_details_and_image(self):
+        self.login_as_admin()
+        image = SimpleUploadedFile(
+            'barber.gif',
+            b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;',
+            content_type='image/gif',
+        )
+        url = reverse('delete_barber', kwargs={'barber_id': self.barber.id})
+        response = self.client.patch(
+            url,
+            {'name': 'Kwame', 'surname': 'Mensah', 'description': 'Fade specialist', 'profile_image': image},
+            format='multipart',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.barber.refresh_from_db()
+        self.assertEqual(self.barber.name, 'Kwame')
+        self.assertEqual(self.barber.description, 'Fade specialist')
+        self.assertTrue(self.barber.profile_image)
 
 
     def test_delete_barber_not_found(self):

@@ -1,5 +1,8 @@
+from datetime import datetime, timedelta
+
 from django.db import models
 from django.db.models import Q, Sum
+from django.utils import timezone
 from enum import Enum
 from .user import Barber, Client
 
@@ -8,8 +11,10 @@ class AppointmentStatus(Enum):
     Enumeration of possible statuses for an appointment.
     """
     ONGOING = "ONGOING"
+    IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+    NO_SHOW = "NO_SHOW"
 
     @classmethod
     def choices(cls):
@@ -26,7 +31,10 @@ class Service(models.Model):
     """
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='services_offered')
     name = models.CharField(max_length=100)
+    description = models.CharField(max_length=240, blank=True)
+    image = models.ImageField(upload_to='images/services/', null=True, blank=True)
     price = models.DecimalField(max_digits=6, decimal_places=2)
+    duration_minutes = models.PositiveSmallIntegerField(default=30)
 
     class Meta:
         constraints = [
@@ -41,8 +49,20 @@ class Service(models.Model):
             'id': self.id,
             'barber_id': self.barber.id,
             'name': self.name,
+            'description': self.description,
+            'image': self.image.url if self.image else None,
             'price': float(self.price),
+            'duration_minutes': self.duration_minutes,
         }
+
+
+class AppointmentLocation(Enum):
+    SHOP = 'SHOP'
+    HOME = 'HOME'
+
+    @classmethod
+    def choices(cls):
+        return [(location.value, location.name) for location in cls]
     
 
 class Appointment(models.Model):
@@ -60,13 +80,29 @@ class Appointment(models.Model):
     date = models.DateField()
     slot = models.TimeField()
     services = models.ManyToManyField(Service, through='AppointmentService', related_name='appointments')
-    status = models.CharField( max_length=10, choices=AppointmentStatus.choices(), default=AppointmentStatus.ONGOING.value)
+    status = models.CharField(max_length=16, choices=AppointmentStatus.choices(), default=AppointmentStatus.ONGOING.value)
     reminder_email_sent = models.BooleanField(default=False)
+    duration_minutes = models.PositiveSmallIntegerField(default=30)
+    location_type = models.CharField(max_length=8, choices=AppointmentLocation.choices(), default=AppointmentLocation.SHOP.value)
+    home_address = models.CharField(max_length=255, blank=True)
+    notes = models.CharField(max_length=500, blank=True)
+    travel_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    confirmation_sent_at = models.DateTimeField(null=True, blank=True)
+    reminder_sent_at = models.DateTimeField(null=True, blank=True)
+    notification_error = models.CharField(max_length=500, blank=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['client', 'date'], condition=~Q(status=AppointmentStatus.CANCELLED.value), name='unique_appointment_per_client_date_if_not_cancelled'),
-            models.UniqueConstraint(fields=['barber', 'date', 'slot'], condition=~Q(status=AppointmentStatus.CANCELLED.value), name='unique_appointment_per_barber_date_slot_if_not_cancelled'),
+            models.UniqueConstraint(
+                fields=['client', 'date'],
+                condition=~Q(status__in=[AppointmentStatus.CANCELLED.value, AppointmentStatus.NO_SHOW.value]),
+                name='unique_active_appointment_per_client_date',
+            ),
+            models.UniqueConstraint(
+                fields=['barber', 'date', 'slot'],
+                condition=~Q(status__in=[AppointmentStatus.CANCELLED.value, AppointmentStatus.NO_SHOW.value]),
+                name='unique_active_appointment_per_barber_slot',
+            ),
         ]
 
     @property
@@ -89,7 +125,25 @@ class Appointment(models.Model):
         Returns the total price of all services in this appointment.
         """
         total = self.line_items.aggregate(total=Sum('price'))['total']
-        return float(total) if total else 0.0
+        return float((total or 0) + self.travel_fee)
+
+    @property
+    def start_datetime(self):
+        return timezone.make_aware(datetime.combine(self.date, self.slot), timezone.get_current_timezone())
+
+    @property
+    def end_datetime(self):
+        return self.start_datetime + timedelta(minutes=self.duration_minutes)
+
+    @property
+    def can_modify(self):
+        if self.status != AppointmentStatus.ONGOING.value:
+            return False
+
+        from .business import ShopSettings
+
+        notice = timedelta(hours=ShopSettings.load().cancellation_notice_hours)
+        return timezone.localtime(timezone.now()) < self.start_datetime - notice
     
     def to_dict(self):
         """
@@ -103,8 +157,18 @@ class Appointment(models.Model):
             'services': self.services_list,
             'date': self.date,
             'slot': self.slot.strftime("%H:%M"),
+            'end_time': self.end_datetime.strftime("%H:%M"),
+            'duration_minutes': self.duration_minutes,
+            'location_type': self.location_type,
+            'home_address': self.home_address,
+            'notes': self.notes,
+            'travel_fee': float(self.travel_fee),
             'status': self.status,
             'reminder_email_sent': self.reminder_email_sent,
+            'confirmation_sent_at': self.confirmation_sent_at,
+            'reminder_sent_at': self.reminder_sent_at,
+            'notification_error': self.notification_error,
+            'can_modify': self.can_modify,
         }
 
 
@@ -120,6 +184,7 @@ class AppointmentService(models.Model):
     original_service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=6, decimal_places=2)
+    duration_minutes = models.PositiveSmallIntegerField(default=30)
 
     def to_dict(self):
         return {
@@ -127,6 +192,7 @@ class AppointmentService(models.Model):
             'original_service_id': self.original_service_id,
             'name': self.name,
             'price': float(self.price),
+            'duration_minutes': self.duration_minutes,
         }
 
 

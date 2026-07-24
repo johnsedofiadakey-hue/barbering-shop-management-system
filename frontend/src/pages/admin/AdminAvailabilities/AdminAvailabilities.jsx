@@ -4,6 +4,7 @@ import { useAuth } from '@hooks/useAuth';
 import { cleanPayload, isAnyFieldSet } from '@utils/utils';
 import styles from './AdminAvailabilities.module.scss';
 import api from '@api';
+import { formatTime } from '@utils/dateTime';
 
 import Icon from '@components/common/Icon/Icon';
 import Pagination from '@components/common/Pagination/Pagination';
@@ -196,7 +197,7 @@ function AdminAvailabilities() {
                   <Button
                     className={styles.actionBtn}
                     type="button"
-                    color="primary"
+                    color="gold"
                     size="md"
                     onClick={openCreatePopup} //
                   >
@@ -209,21 +210,21 @@ function AdminAvailabilities() {
               {/* Table headers */}
               <Pagination.Column>
                 <div className={styles.tableTitle}>
-                  <Icon name="date" size="ty" black />
+                  <Icon name="date" size="ty" />
                   <span className={styles.tableTitleName}>Date</span>
                 </div>
               </Pagination.Column>
 
               <Pagination.Column>
                 <div className={styles.tableTitle}>
-                  <Icon name="hourglass" size="ty" black />
+                  <Icon name="hourglass" size="ty" />
                   <span className={styles.tableTitleName}>Slots</span>
                 </div>
               </Pagination.Column>
 
               <Pagination.Column>
                 <div className={styles.tableTitle}>
-                  <Icon name="dial" size="ty" black />
+                  <Icon name="dial" size="ty" />
                   <span className={styles.tableTitleName}>Actions</span>
                 </div>
               </Pagination.Column>
@@ -237,7 +238,7 @@ function AdminAvailabilities() {
 
                   <Pagination.Cell>
                     <div className={styles.availabilitySlots}>
-                      <span className={styles.slots}>{availability.slots.join(', ')}</span>
+                      <span className={styles.slots}>{availability.slots.map(formatTime).join(', ')}</span>
                     </div>
                   </Pagination.Cell>
 
@@ -246,19 +247,19 @@ function AdminAvailabilities() {
                       <Button
                         type="button"
                         size="sm"
-                        color="animated"
+                        color="actionbtn"
                         onClick={() => openUpdatePopup(availability)} //
                       >
-                        <Icon name="pen" size="ty" black />
+                        <Icon name="pen" size="ty" />
                       </Button>
 
                       <Button
                         type="button"
                         size="sm"
-                        color="animated"
+                        color="actionbtn"
                         onClick={() => openDeletePopup(availability)} //
                       >
-                        <Icon name="trash" size="ty" black />
+                        <Icon name="trash" size="ty" />
                       </Button>
                     </div>
                   </Pagination.Cell>
@@ -277,7 +278,7 @@ function AdminAvailabilities() {
 
         {status === 'error' && (
           <Card className={styles.error}>
-            <Icon name="cancelled" size="md" black />
+            <Icon name="cancelled" size="md" />
             <span className={styles.title}>Barber Error</span>
             <div className={styles.message}>{message}</div>
 
@@ -302,9 +303,9 @@ function AdminAvailabilities() {
         action={{ submit: 'Create', loading: 'Creating...' }}
         onValidate={(payload) => isAnyFieldSet(payload, 'Fill at least start date, start-end time to create a new availability.')}
         onSubmit={(payload) => handleCreateAvailability(barberId, cleanPayload(payload))}
-        onClose={closeCreatePopup}
+        onClose={closeUpdatePopup}
       >
-        <Modal.Title icon="calendar">Create Availability</Modal.Title>
+        <Modal.Title icon="calendar">Update Availability</Modal.Title>
         <Modal.Description>
           Specify the dates and time range when the barber is available. For a single day, end date is not required. 30min
           interval is default.

@@ -30,7 +30,7 @@ function Profile({ profile, imageSize, className, fontSize = '1.3rem', loading }
           </div>
         )}
 
-        <div className={styles.username}>{profile.username}</div>
+        {(!profile.name || !profile.surname) && <div className={styles.username}>{profile.email || 'Profile pending'}</div>}
       </div>
     </div>
   );

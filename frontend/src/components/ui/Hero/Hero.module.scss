@@ -9,7 +9,7 @@
 
   .left {
     flex: 1;
-    color: $color-primary;
+    color: $text-body;
     max-width: 50%;
 
     display: flex;
@@ -22,8 +22,8 @@
     position: relative;
 
     flex: 1;
-    background: $color-secondary;
-    color: $color-secondary;
+    background: $color-main;
+    color: $text-body;
     max-width: 50%;
 
     display: flex;

@@ -1,7 +1,7 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework import status
 from ..utils import (
     IsBarberRole,
@@ -16,6 +16,7 @@ from ..serializers import (
     UpdateBarberServiceSerializer,
     DeleteBarberServiceSerializer,
     GeBarberAppointmentsSerializer,
+    UpdateBarberAppointmentStatusSerializer,
     GetBarberReviewsSerializer,
 )
 
@@ -97,7 +98,7 @@ def get_barber_availabilities(request):
 )
 @api_view(['GET', 'POST'])
 @permission_classes([IsBarberRole])
-@parser_classes([JSONParser]) 
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def manage_barber_services(request):
     """
     Barber only: Handles get and create operations for services offered by the authenticated barber.
@@ -132,7 +133,7 @@ def manage_barber_services(request):
 )
 @api_view(['PATCH', 'DELETE'])
 @permission_classes([IsBarberRole])
-@parser_classes([JSONParser]) 
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def manage_barber_service(request, service_id):
     """
     Barber only: Handles update and delete operations for a specific service by the authenticated barber.
@@ -171,6 +172,25 @@ def get_barber_appointments(request):
     serializer.is_valid(raise_exception=True)
 
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    methods=['PATCH'],
+    request=UpdateBarberAppointmentStatusSerializer,
+    responses={200: OpenApiResponse(description="Appointment status updated successfully.")},
+    description="Barber only: start, complete, or mark one of their appointments as a no-show.",
+)
+@api_view(['PATCH'])
+@permission_classes([IsBarberRole])
+@parser_classes([JSONParser])
+def update_barber_appointment_status(request, appointment_id):
+    serializer = UpdateBarberAppointmentStatusSerializer(
+        data=request.data,
+        context={'barber': request.user, 'appointment_id': appointment_id},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response({'detail': 'Appointment status updated successfully.'}, status=status.HTTP_200_OK)
 
 
 @extend_schema(

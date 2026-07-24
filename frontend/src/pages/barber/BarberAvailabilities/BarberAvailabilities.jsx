@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@hooks/useAuth';
 import styles from './BarberAvailabilities.module.scss';
 import api from '@api';
+import { formatTime } from '@utils/dateTime';
 
 import Pagination from '@components/common/Pagination/Pagination';
 import Icon from '@components/common/Icon/Icon';
@@ -76,14 +77,14 @@ function BarberAvailabilities() {
       {/* Table headers */}
       <Pagination.Column>
         <div className={styles.tableTitle}>
-          <Icon name="date" size="ty" black />
+          <Icon name="date" size="ty" />
           <span className={styles.tableTitleName}>Date</span>
         </div>
       </Pagination.Column>
 
       <Pagination.Column>
         <div className={styles.tableTitle}>
-          <Icon name="hourglass" size="ty" black />
+          <Icon name="hourglass" size="ty" />
           <span className={styles.tableTitleName}>Slots</span>
         </div>
       </Pagination.Column>
@@ -97,7 +98,7 @@ function BarberAvailabilities() {
 
           <Pagination.Cell>
             <div className={styles.availabilitySlots}>
-              <span className={styles.slots}>{availability.slots.join(', ')}</span>
+              <span className={styles.slots}>{availability.slots.map(formatTime).join(', ')}</span>
             </div>
           </Pagination.Cell>
         </Pagination.Row>

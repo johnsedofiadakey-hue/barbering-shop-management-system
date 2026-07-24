@@ -81,6 +81,7 @@ class User(AbstractUser):
     email = models.EmailField(null=True, blank=True)
     role = models.CharField(max_length=10, choices=Roles.choices(), default=Roles.CLIENT.value)
     profile_image = models.ImageField(upload_to=_get_profile_image_path, null=True, blank=True)
+    firebase_uid = models.CharField(max_length=128, unique=True, null=True, blank=True)
     
 
     objects = UserManager()

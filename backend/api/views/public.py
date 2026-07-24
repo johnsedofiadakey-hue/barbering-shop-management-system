@@ -12,6 +12,7 @@ from ..serializers import (
     GetBarberProfilePublicSerializer,
     GetClientProfilePublicSerializer
 )
+from ..utils import IsBarberOrAdminRole
 
 
 @extend_schema(
@@ -50,15 +51,14 @@ def get_barber_profile_public(request, barber_id):
 
 @extend_schema(
     responses={200: GetClientProfilePublicSerializer},
-    description="Get all public profile information for a client. (Public)",
+    description="Get the minimal client identity needed by authenticated barbers and administrators.",
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])
-@authentication_classes([]) 
+@permission_classes([IsBarberOrAdminRole])
 @parser_classes([JSONParser]) 
 def get_client_profile_public(request, client_id):
     """
-    Get all services for the given client.
+    Return a minimal client identity card to authorized staff only.
     """
     serializer = GetClientProfilePublicSerializer(data={}, context={'client_id': client_id})
     serializer.is_valid(raise_exception=True)

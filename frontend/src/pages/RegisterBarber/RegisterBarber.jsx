@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import styles from './RegisterBarber.module.scss';
 import api from '@api';
+import { createFirebaseStaffAccount } from '../../lib/firebase';
 
 import Spinner from '@components/common/Spinner/Spinner';
 import Card from '@components/common/Card/Card';
@@ -68,7 +69,6 @@ function RegisterBarber() {
   const initialFields = {
     name: '',
     surname: '',
-    username: '',
     password: '',
     passwordConfirm: '',
   };
@@ -86,11 +86,12 @@ function RegisterBarber() {
    * Handles form submission for registering a new account to the api
    * If successfull redirect to login page, otherwise displays error messages on failure.
    */
-  const handleRegister = async ({ name, surname, username, password }) => {
+  const handleRegister = async ({ name, surname, password }) => {
     setLoading(true);
 
     try {
-      await api.auth.registerBarber(uidb64, token, { name, surname, username, password });
+      const idToken = await createFirebaseStaffAccount(email, password);
+      await api.auth.registerBarber(uidb64, token, { id_token: idToken, name, surname });
       navigate('/login?registered=2', { replace: true });
     } finally {
       setLoading(false);
@@ -146,7 +147,6 @@ function RegisterBarber() {
               </div>
 
               <div className={styles.inputGroup}>
-                <Input label="Username" name="username" type="text" required size="md" />
                 <Input label="Email" name="email" type="email" size="md" placeholder={email} disabled />
               </div>
 
@@ -155,7 +155,7 @@ function RegisterBarber() {
                 <Input label="Confirm password" name="passwordConfirm" type="password" required size="md" />
               </div>
 
-              <Button className={styles.registerBtn} type="submit" size="md" disabled={loading} wide color="primary">
+              <Button className={styles.registerBtn} type="submit" size="md" disabled={loading} wide color="gold">
                 <span className={styles.line}>
                   {loading ? (
                     <>
@@ -188,7 +188,7 @@ function RegisterBarber() {
         <Hero.Right className={styles.page} background={'background'}>
           <Card className={styles.error}>
             <div className={styles.center}>
-              <Icon name="cancelled" size="md" black />
+              <Icon name="cancelled" size="md" />
               <h2>Invitation Error</h2>
               <div className={styles.message}>{message}</div>
 

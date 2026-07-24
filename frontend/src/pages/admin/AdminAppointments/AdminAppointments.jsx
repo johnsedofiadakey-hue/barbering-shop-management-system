@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@hooks/useAuth';
+import { useShopSettings } from '@hooks/useShopSettings';
 import styles from './AdminAppointments.module.scss';
 import api from '@api';
+import { formatTime } from '@utils/dateTime';
 
 import Pagination from '@components/common/Pagination/Pagination';
 import Icon from '@components/common/Icon/Icon';
@@ -12,6 +14,7 @@ import Profile from '@components/ui/Profile/Profile';
 
 function AdminAppointments() {
   const { profile } = useAuth();
+  const shop = useShopSettings();
   const [appointments, setAppointments] = useState([]);
 
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
@@ -150,49 +153,49 @@ function AdminAppointments() {
         {/* Table headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="client" size="ty" black />
+            <Icon name="client" size="ty" />
             <span className={styles.tableTitleName}>Client</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="calendar" size="ty" black />
+            <Icon name="calendar" size="ty" />
             <span className={styles.tableTitleName}>Date</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="barber" size="ty" black />
+            <Icon name="barber" size="ty" />
             <span className={styles.tableTitleName}>Barber</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="service" size="ty" black />
+            <Icon name="service" size="ty" />
             <span className={styles.tableTitleName}>Services</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="revenue" size="ty" black />
+            <Icon name="revenue" size="ty" />
             <span className={styles.tableTitleName}>Spent</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="email_base" size="ty" black />
+            <Icon name="email_base" size="ty" />
             <span className={styles.tableTitleName}>Reminder</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="spinner" size="ty" black />
+            <Icon name="spinner" size="ty" />
             <span className={styles.tableTitleName}>Status</span>
           </div>
         </Pagination.Column>
@@ -208,7 +211,7 @@ function AdminAppointments() {
               <div className={styles.dateContainer}>
                 <div className={styles.date}>
                   <span className={styles.date}>{appointment.date.replaceAll('-', ' / ')}</span>
-                  <span className={styles.slot}>( {appointment.slot} )</span>
+                  <span className={styles.slot}>( {formatTime(appointment.slot)} )</span>
                 </div>
               </div>
             </Pagination.Cell>
@@ -223,22 +226,33 @@ function AdminAppointments() {
 
             <Pagination.Cell>
               <div className={styles.amountSpent}>
-                <span className={styles.amount}>${appointment.amount_spent}</span>
+                <span className={styles.amount}>
+                  {shop.currency_symbol} {appointment.amount_spent}
+                </span>
               </div>
             </Pagination.Cell>
 
             <Pagination.Cell>
-              <Tag className={styles.reminderTag} color={appointment.reminder_email_sent ? 'blue' : 'yellow'}>
-                {appointment.reminder_email_sent ? 'Sent' : 'Not Sent'}
+              <Tag className={styles.reminderTag} color={appointment.reminder_sent_at ? 'blue' : 'yellow'}>
+                {appointment.reminder_sent_at ? 'Sent' : 'Scheduled'}
               </Tag>
             </Pagination.Cell>
 
             <Pagination.Cell>
               <Tag
                 className={styles.statusTag}
-                color={appointment.status === 'COMPLETED' ? 'green' : appointment.status === 'ONGOING' ? 'yellow' : 'red'}
+                color={
+                  appointment.status === 'COMPLETED'
+                    ? 'green'
+                    : ['ONGOING', 'IN_PROGRESS'].includes(appointment.status)
+                      ? 'yellow'
+                      : 'red'
+                }
               >
-                {appointment.status.charAt(0) + appointment.status.slice(1).toLowerCase()}
+                {appointment.status
+                  .replaceAll('_', ' ')
+                  .toLowerCase()
+                  .replace(/^./, (value) => value.toUpperCase())}
               </Tag>
             </Pagination.Cell>
           </Pagination.Row>

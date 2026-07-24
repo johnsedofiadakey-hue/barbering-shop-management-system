@@ -43,25 +43,38 @@
 
   .service-id {
     .hash {
-      color: $color-primary;
+      color: $text-strong;
       font-weight: 500;
       font-size: 1.2rem;
     }
 
     .id {
-      color: $color-primary;
+      color: $text-strong;
       font-weight: 600;
       font-size: 1.4rem;
     }
   }
   .service-name {
-    color: $color-primary;
+    color: $text-strong;
     font-weight: 600;
     font-size: 1.3rem;
   }
 
+  .service-identity {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    img {
+      width: 4.6rem;
+      height: 4.6rem;
+      border-radius: 1rem;
+      object-fit: cover;
+    }
+  }
+
   .service-price {
-    color: $color-primary;
+    color: $text-strong;
     font-weight: 600;
     font-size: 1.3rem;
   }
@@ -69,5 +82,24 @@
   .actions {
     display: flex;
     gap: 2rem;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .barber-services {
+    margin: 1.4rem;
+
+    .action {
+      flex-direction: column-reverse;
+      gap: 0.8rem;
+
+      > * {
+        width: 100%;
+      }
+    }
+
+    .actions {
+      justify-content: flex-end;
+    }
   }
 }

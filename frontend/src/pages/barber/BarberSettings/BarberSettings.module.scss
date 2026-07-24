@@ -60,8 +60,31 @@
   }
 }
 
-@media (max-width: $bp-small) {
-  .input-group {
-    flex-direction: column;
+@media (max-width: $bp-medium-small) {
+  .barber-settings {
+    margin: 1.4rem;
+    gap: 1.4rem;
+
+    .profile-image-section {
+      padding: 1.2rem 0;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 1.5rem;
+
+      .image-action {
+        width: 100%;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+    }
+
+    .update-profile-section,
+    .delete-profile-section {
+      padding: 1.2rem 0;
+    }
+
+    .input-group {
+      flex-direction: column;
+    }
   }
 }

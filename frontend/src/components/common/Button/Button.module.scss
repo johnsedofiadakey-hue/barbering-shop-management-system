@@ -10,6 +10,7 @@
   font-family: inherit; // keep if you want to inherit font family
   line-height: normal;
 
+  background: none; // reset native <button> default; color variants set their own
   border: none;
   outline: none;
   border-radius: $border-radius;
@@ -25,7 +26,9 @@
   justify-content: center;
 
   transition:
-    background 0.18s,
+    background 0.3s,
+    border-color 0.3s,
+    color 0.3s,
     transform 0.18s cubic-bezier(0.4, 0.05, 0.2, 1);
 
   &:disabled,
@@ -38,108 +41,130 @@
 
 // Style modifiers
 
+// Secondary/muted action button (e.g. "Refresh")
 .primary {
-  background: $color-primary;
-  color: $color-light;
-  border: 1px solid $border;
+  background: $color-btn-bg;
+  color: $color-btn-text;
+  border: 1px solid $border-subtle;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
-    background-color: $color-lighter;
-    color: $color-light;
-    border-color: $color-primary;
+    background-color: $color-btn-hover-bg;
+    border-color: $border-gold-dim;
   }
 }
 
+// Legacy alias — behaves like .primary now that light chip buttons no longer exist
 .secondary {
-  background-color: $color-light;
-  color: $color-primary;
+  background: $color-btn-bg;
+  color: $color-btn-text;
+  border: 1px solid $border-subtle;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
-    background-color: $color-accent;
-    color: $color-light;
+    background-color: $color-btn-hover-bg;
+    border-color: $border-gold-dim;
   }
 }
 
 .borderless {
-  background: $color-primary;
-  color: $color-light;
+  background: transparent;
+  color: $text-muted;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
-    background-color: $color-lighter;
-    color: $color-light;
+    background-color: rgba(197, 160, 89, 0.07);
+    color: $color-secondary;
   }
 }
 
 .translight {
   background: none;
-  color: $color-primary;
-  border: 1px solid $border;
+  color: $text-muted;
+  border: 1px solid $border-subtle;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
-    background-color: $color-lighter;
-    color: $color-light;
-    border-color: $color-primary;
+    background-color: $color-danger-bg;
+    color: $color-secondary;
+    border-color: $color-danger-border;
   }
 }
 
+// Ghost chrome button (header "Logout")
 .transdark {
   background: none;
-  color: $color-light;
-  border: 1px solid $border;
+  color: #b8b2a7;
+  border: 1px solid $border-subtle;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
-    background-color: $color-lighter;
-    color: $color-light;
-    border-color: $color-primary;
+    color: $color-secondary;
+    border-color: $border-gold-dim;
   }
 }
 
 .link {
-  // background: $color-primary;
-  color: $color-primary;
+  background: none;
+  color: $text-muted;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
-    // background-color: $color-lighter;
-    // color: $color-light;
+    color: $color-gold;
     text-decoration: underline;
   }
 }
 
+// Plain icon-only button — scales on hover, no visible chrome (footer social icons, close button)
 .animated {
+  background: none;
   padding: 0;
+  color: $text-muted;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
     transform: scale(1.07); // scales up by 7%
   }
 }
 
+// Boxed icon-only action button (table row actions, pagination arrows)
+.actionbtn {
+  width: 3.4rem;
+  height: 3.4rem;
+  padding: 0;
+  border-radius: 9px;
+  background: $color-btn-bg;
+  border: 1px solid $border-subtle;
+  color: #b0a894;
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    border-color: $border-hover;
+    background: $color-icon-chip-bg;
+  }
+}
+
 .muted {
   background: transparent;
-  color: $color-muted;
-  border: 1px solid $border;
+  color: $text-dim;
+  border: 1px solid $border-hair;
 
   pointer-events: none;
 }
 
 .gold {
   background: $color-gold;
-  color: $color-primary;
+  color: $color-ink-on-gold;
   border: 1px solid $border-hover;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
     background-color: $color-gold-strong;
-    color: $color-primary;
+    color: $color-ink-on-gold;
+    box-shadow: 0 0 15px rgba(197, 160, 89, 0.4);
+    transform: scale(1.02);
   }
 }
 
 .goldoutline {
   background: transparent;
-  color: $color-on-dark;
+  color: $text-strong;
   border: 1px solid $border-hover;
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
     background-color: $color-gold;
-    color: $color-primary;
+    color: $color-ink-on-gold;
   }
 }
 

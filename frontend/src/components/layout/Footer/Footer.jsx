@@ -1,51 +1,27 @@
 import styles from './Footer.module.scss';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '@hooks/useAuth';
 
 import Logo from '@components/common/Logo/Logo';
-import Button from '@components/common/Button/Button';
-import Icon from '@components/common/Icon/Icon';
 
 function Footer() {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const showStaffAccess = !isAuthenticated && location.pathname !== '/staff-login';
+
   return (
-    <footer className={styles.footerArea}>
+    <footer className={`${styles.footerArea} ${isAuthenticated ? styles.authenticated : ''}`}>
       <div className={styles.footer}>
         <Logo size="sm" />
-
-        <ul className={styles.links}>
-          <li>
-            <Button
-              className={styles.button}
-              href="https://github.com/CreepyMemes/barbermanager"
-              size="md"
-              color="animated" //
-            >
-              <Icon name="github" size={'md'} />
-            </Button>
-          </li>
-
-          <li>
-            <Button
-              className={styles.button}
-              href="https://github.com/CreepyMemes/barbermanager/tree/master/docs"
-              size="md"
-              color="animated"
-            >
-              <Icon name="docs" size={'md'} />
-            </Button>
-          </li>
-
-          <li>
-            <Button
-              className={styles.button}
-              href="https://github.com/CreepyMemes/barbermanager/issues/new"
-              size="md"
-              color="animated"
-            >
-              <Icon name="bug" size={'md'} />
-            </Button>
-          </li>
-        </ul>
-
-        <div className={styles.copyright}>&copy; {new Date().getFullYear()} CreepyMemes. All rights reserved.</div>
+        <p className={styles.promise}>Craft. Care. Consistency.</p>
+        <div className={styles.footerEnd}>
+          <span className={styles.copyright}>&copy; {new Date().getFullYear()} BarberManager</span>
+          {showStaffAccess && (
+            <a className={styles.staffAccess} href="/staff-login">
+              Team access
+            </a>
+          )}
+        </div>
       </div>
     </footer>
   );

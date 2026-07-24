@@ -112,28 +112,28 @@ function BarberReviews() {
         {/* Table headers */}
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="client" size="ty" black />
+            <Icon name="client" size="ty" />
             <span className={styles.tableTitleName}>Client</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="rating" size="ty" black />
+            <Icon name="rating" size="ty" />
             <span className={styles.tableTitleName}>Rating</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="comment" size="ty" black />
+            <Icon name="comment" size="ty" />
             <span className={styles.tableTitleName}>Comment</span>
           </div>
         </Pagination.Column>
 
         <Pagination.Column>
           <div className={styles.tableTitle}>
-            <Icon name="date" size="ty" black />
+            <Icon name="date" size="ty" />
             <span className={styles.tableTitleName}>Date</span>
           </div>
         </Pagination.Column>

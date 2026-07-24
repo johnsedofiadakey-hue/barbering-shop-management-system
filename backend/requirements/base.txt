@@ -13,3 +13,5 @@ redis==6.2.0
 sqlparse==0.5.3
 twilio==9.6.3
 tzdata==2025.2
+firebase-admin==6.9.0
+django-storages[google]==1.14.6

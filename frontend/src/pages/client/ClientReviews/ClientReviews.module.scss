@@ -58,7 +58,7 @@
       }
 
       .slot {
-        color: $color-primary;
+        color: $text-strong;
         font-size: 1.05rem;
         font-weight: 500;
       }
@@ -81,7 +81,7 @@
     font-weight: 600;
 
     .no-services {
-      color: $color-primary;
+      color: $text-strong;
       font-style: italic;
       font-weight: 500;
     }
@@ -110,7 +110,7 @@
     display: flex;
 
     .date {
-      color: $color-primary;
+      color: $text-strong;
       font-size: 1.2rem;
       font-weight: 600;
     }
@@ -119,6 +119,33 @@
   .actions {
     display: flex;
     gap: 2rem;
+  }
+}
+
+@media (max-width: $bp-medium-small) {
+  .client-reviews {
+    margin: 1.4rem;
+
+    .action {
+      flex-direction: column-reverse;
+      gap: 0.8rem;
+
+      > * {
+        width: 100%;
+      }
+    }
+
+    .review-comment .comment {
+      white-space: normal;
+    }
+
+    .actions {
+      justify-content: flex-end;
+    }
+  }
+
+  .confirmation .confirm-row {
+    height: auto;
   }
 }
 
@@ -131,7 +158,8 @@
     height: 4rem;
     padding: 1rem;
 
-    background: $color-secondary;
+    background: $color-surface-inset;
+    border: 1px solid $border-subtle;
     border-radius: $border-radius;
 
     display: flex;
@@ -148,7 +176,7 @@
 
       .confirm-label {
         padding-left: 0.5rem;
-        color: $color-primary;
+        color: $text-strong;
         font-size: 1.7rem;
         font-weight: 600;
       }
@@ -159,7 +187,7 @@
       flex-direction: column;
 
       .confirm-value {
-        color: $color-primary;
+        color: $text-strong;
         font-size: 1.4rem;
         word-break: break-word;
       }
