@@ -11,6 +11,211 @@
   max-width: 900px;
   margin: 0 auto;
 
+  .widgetHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .backBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0;
+    background: none;
+    border: none;
+    color: $text-muted;
+    font-size: 1.3rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: $color-gold;
+    }
+  }
+
+  .stepIndicator {
+    color: $text-dim;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .stepBody {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+  }
+
+  .stepTitle {
+    color: $text-strong;
+    font-size: 1.8rem;
+  }
+
+  .stepLoading {
+    display: flex;
+    justify-content: center;
+    padding: 3rem 0;
+  }
+
+  .stepEmpty {
+    color: $text-muted;
+    font-size: 1.4rem;
+  }
+
+  .barberGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+
+  .barberCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1.6rem 1rem;
+    border: 1px solid $border-subtle;
+    border-radius: $border-radius-panel;
+    background: transparent;
+    color: $text-body;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.2s ease, background 0.2s ease;
+
+    &:hover {
+      border-color: $border-gold-dim;
+    }
+
+    strong {
+      display: block;
+      color: $text-strong;
+      font-size: 1.35rem;
+    }
+
+    small {
+      display: block;
+      margin-top: 0.2rem;
+      color: $color-gold;
+      font-size: 1.1rem;
+    }
+  }
+
+  .serviceGridChoices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .serviceCardChoice {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    overflow: hidden;
+    padding: 0;
+    border: 1px solid $border-subtle;
+    border-radius: $border-radius-panel;
+    background: $color-surface-inset;
+    color: $text-body;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.2s ease, background 0.2s ease;
+
+    img {
+      width: 6.4rem;
+      height: 6.4rem;
+      object-fit: cover;
+      flex: 0 0 auto;
+    }
+
+    strong {
+      display: block;
+      color: $text-strong;
+      font-size: 1.3rem;
+    }
+
+    small {
+      display: block;
+      margin-top: 0.3rem;
+      color: $color-gold;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    svg {
+      margin-left: auto;
+      margin-right: 1rem;
+      color: $color-gold;
+    }
+
+    &:hover {
+      border-color: $border-gold-dim;
+    }
+
+    &.selected {
+      border-color: $color-gold;
+      background: rgba(197, 160, 89, 0.12);
+    }
+  }
+
+  .locationToggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      padding: 1.2rem;
+      border: 1px solid $border-subtle;
+      border-radius: $border-radius-panel;
+      background: transparent;
+      color: $text-body;
+      font-size: 1.3rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+
+      &:hover {
+        border-color: $border-gold-dim;
+      }
+
+      &.selected {
+        border-color: $color-gold;
+        background: rgba(197, 160, 89, 0.12);
+        color: $color-gold;
+      }
+    }
+  }
+
+  .addressField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    color: $text-muted;
+    font-size: 1.3rem;
+    font-weight: 600;
+
+    input {
+      padding: 1.2rem 1.4rem;
+      border: 1px solid $border-subtle;
+      border-radius: $border-radius;
+      background: $color-surface-inset;
+      color: $text-strong;
+      font-size: 1.4rem;
+
+      &:focus {
+        outline: none;
+        border-color: $color-gold;
+      }
+    }
+  }
+
   .layout {
     display: flex;
     gap: 4rem;
@@ -61,7 +266,7 @@
     max-width: 100%;
     padding: 3rem 2rem 2rem;
     border-radius: 24px 24px 0 0;
-    background: $surface-base;
+    background: $color-main;
     border-top: 1px solid $border-surface;
     border-bottom: none;
     border-left: none;
@@ -172,7 +377,7 @@
 }
 
 /* Hide Mobile elements on desktop */
-@media (min-width: $bp-medium-small + 1px) {
+@media (min-width: calc(#{$bp-medium-small} + 1px)) {
   .mobileFab, .sheetBackdrop, .sheetHandle {
     display: none;
   }

@@ -39,10 +39,16 @@ function ClientAppointments() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Parse barber id from query:
+  // Parse booking prefill params from query (set by the homepage booking widget, or a barber "Book" shortcut)
   const queryParams = new URLSearchParams(location.search);
   const preselectBarberId = queryParams.get('bookBarber');
   const directBooking = queryParams.get('book') === '1';
+  const prefillServices = queryParams.get('bookServices');
+  const prefillDate = queryParams.get('bookDate');
+  const prefillSlot = queryParams.get('bookSlot');
+  const prefillLocation = queryParams.get('bookLocation');
+  const prefillAddress = queryParams.get('bookAddress');
+  const isFullyPrefilled = Boolean(preselectBarberId && prefillServices && prefillDate && prefillSlot);
 
   const [appointments, setAppointments] = useState([]);
 
@@ -54,17 +60,19 @@ function ClientAppointments() {
 
   // Popup states
   const [bookPopup, setBookPopup] = useState(Boolean(preselectBarberId || directBooking));
+  const [bookStepIndex, setBookStepIndex] = useState(isFullyPrefilled ? 2 : 0);
   const [cancelPopup, setCancelPopup] = useState({ open: false, appointment: null });
   const [reschedulePopup, setReschedulePopup] = useState({ open: false, appointment: null });
 
-  // Preselected barber initial fields state from parameters
+  // Preselected fields state from parameters (homepage widget hands off a full selection; a
+  // barber-only shortcut like "Book again" only preselects the barber)
   const [bookFields, setBookFields] = useState({
     barber_id: preselectBarberId || '',
-    services: [],
-    date: '',
-    slot: '',
-    location_type: 'SHOP',
-    home_address: '',
+    services: prefillServices ? prefillServices.split(',').filter(Boolean) : [],
+    date: prefillDate || '',
+    slot: prefillSlot || '',
+    location_type: prefillLocation || 'SHOP',
+    home_address: prefillAddress || '',
     notes: '',
   });
 
@@ -138,19 +146,36 @@ function ClientAppointments() {
   useEffect(() => {
     if (!preselectBarberId && !directBooking) return;
 
-    // Open and preselect the barber (ok even if already open)
+    // Open and preselect the barber (ok even if already open). A fully-prefilled selection
+    // (from the homepage widget) skips straight to the confirm step instead of redoing the wizard.
     openBookPopup();
-    if (preselectBarberId) setBookFields((fields) => ({ ...fields, barber_id: preselectBarberId }));
+    if (preselectBarberId) {
+      setBookFields((fields) => ({
+        ...fields,
+        barber_id: preselectBarberId,
+        services: prefillServices ? prefillServices.split(',').filter(Boolean) : fields.services,
+        date: prefillDate || fields.date,
+        slot: prefillSlot || fields.slot,
+        location_type: prefillLocation || fields.location_type,
+        home_address: prefillAddress || fields.home_address,
+      }));
+      setBookStepIndex(isFullyPrefilled ? 2 : 0);
+    }
 
-    // Remove the param immediately so closing won't reopen the modal
+    // Remove the params immediately so closing won't reopen the modal
     const params = new URLSearchParams(location.search);
-    params.delete('bookBarber');
-    params.delete('book');
+    ['bookBarber', 'book', 'bookServices', 'bookDate', 'bookSlot', 'bookLocation', 'bookAddress'].forEach((key) =>
+      params.delete(key),
+    );
     navigate({ search: params.toString() }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectBarberId, directBooking, location.search, navigate]);
 
   // Book appointment popup state handlers
-  const openBookPopup = () => setBookPopup(true);
+  const openBookPopup = () => {
+    setBookStepIndex(0);
+    setBookPopup(true);
+  };
   const openRebookPopup = (appointment) => {
     setBookFields({
       barber_id: String(appointment.barber_id || ''),
@@ -161,10 +186,12 @@ function ClientAppointments() {
       home_address: appointment.home_address || '',
       notes: '',
     });
+    setBookStepIndex(0);
     setBookPopup(true);
   };
   const closeBookPopup = () => {
     setBookPopup(false);
+    setBookStepIndex(0);
     setBookFields({ barber_id: '', services: [], date: '', slot: '', location_type: 'SHOP', home_address: '', notes: '' });
   };
 
@@ -803,6 +830,7 @@ function ClientAppointments() {
       <Modal
         open={bookPopup}
         fields={bookFields}
+        initialStepIndex={bookStepIndex}
         wide
         action={{ submit: 'Confirm booking', loading: 'Booking...' }}
         onSubmit={handleBookAppointment}

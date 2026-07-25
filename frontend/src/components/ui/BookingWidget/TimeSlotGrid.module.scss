@@ -43,16 +43,10 @@
     transition: all 0.2s ease;
     font-size: 1.4rem;
 
-    &:hover:not(.unavailable):not(.selected) {
+    &:hover:not(.selected) {
       border-color: $border-gold-dim;
       color: $color-gold;
       transform: translateY(-2px);
-    }
-
-    &.unavailable {
-      opacity: 0.3;
-      cursor: not-allowed;
-      text-decoration: line-through;
     }
 
     &.selected {

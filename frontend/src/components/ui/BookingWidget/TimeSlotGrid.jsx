@@ -1,7 +1,11 @@
 import styles from './TimeSlotGrid.module.scss';
 import { format } from 'date-fns';
+import { formatTime } from '@utils/dateTime';
+import Spinner from '@components/common/Spinner/Spinner';
 
-function TimeSlotGrid({ selectedDate, availableSlots = [], selectedTime, onSelectTime }) {
+const toLocalDate = (isoDate) => new Date(`${isoDate}T12:00:00`);
+
+function TimeSlotGrid({ selectedDate, slots = [], selectedTime, onSelectTime, isLoading }) {
   if (!selectedDate) {
     return (
       <div className={styles.emptyState}>
@@ -10,44 +14,41 @@ function TimeSlotGrid({ selectedDate, availableSlots = [], selectedTime, onSelec
     );
   }
 
-  // Dummy slots for demonstration if none are provided
-  const slots =
-    availableSlots.length > 0
-      ? availableSlots
-      : [
-          { time: '09:00', available: true },
-          { time: '09:30', available: true },
-          { time: '10:00', available: false },
-          { time: '10:30', available: true },
-          { time: '11:00', available: true },
-          { time: '11:30', available: false },
-          { time: '13:00', available: true },
-          { time: '13:30', available: true },
-          { time: '14:00', available: true },
-          { time: '14:30', available: true },
-          { time: '15:00', available: true },
-        ];
+  if (isLoading) {
+    return (
+      <div className={styles.emptyState}>
+        <Spinner size="sm" />
+      </div>
+    );
+  }
+
+  if (slots.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <p>No times are available for this selection. Try another day.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.timeSlotGrid}>
-      <h3 className={styles.title}>Available times for {format(selectedDate, 'MMMM d, yyyy')}</h3>
+      <h3 className={styles.title}>Available times for {format(toLocalDate(selectedDate), 'MMMM d, yyyy')}</h3>
 
       <div className={styles.grid}>
-        {slots.map((slot) => {
-          const isSelected = selectedTime === slot.time;
+        {slots.map((time) => {
+          const isSelected = selectedTime === time;
           return (
             <button
-              key={slot.time}
-              className={`${styles.slotBtn} ${!slot.available ? styles.unavailable : ''} ${isSelected ? styles.selected : ''}`}
-              disabled={!slot.available}
+              key={time}
+              className={`${styles.slotBtn} ${isSelected ? styles.selected : ''}`}
               onClick={() => {
                 if (typeof navigator !== 'undefined' && navigator.vibrate) {
                   navigator.vibrate(20);
                 }
-                onSelectTime(slot.time);
+                onSelectTime(time);
               }}
             >
-              {slot.time}
+              {formatTime(time)}
             </button>
           );
         })}

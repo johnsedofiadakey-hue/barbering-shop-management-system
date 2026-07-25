@@ -18,6 +18,18 @@ function Header() {
     navigate('/');
   };
 
+  const handleScrollToBooking = () => {
+    document.getElementById('book')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // The hero widget sits inside its own scrolling panel, not the document — drive same-page
+  // anchors explicitly so the target reliably scrolls into view instead of relying on the
+  // browser's native fragment handling for a nested scroll container.
+  const handleNavClick = (id) => (e) => {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <header className={`${styles.headerArea} ${isAuthenticated ? styles.authenticated : ''}`}>
       {isFetchingProfile ? (
@@ -28,10 +40,18 @@ function Header() {
 
           {!isAuthenticated && isHome && (
             <nav className={styles.publicNav} aria-label="Public site">
-              <a href="#services">Services</a>
-              <a href="#signature-cuts">Our work</a>
-              <a href="#how-it-works">How it works</a>
-              <a href="#faq">FAQ</a>
+              <a href="#services" onClick={handleNavClick('services')}>
+                Services
+              </a>
+              <a href="#signature-cuts" onClick={handleNavClick('signature-cuts')}>
+                Our work
+              </a>
+              <a href="#how-it-works" onClick={handleNavClick('how-it-works')}>
+                How it works
+              </a>
+              <a href="#faq" onClick={handleNavClick('faq')}>
+                FAQ
+              </a>
             </nav>
           )}
 
@@ -60,7 +80,12 @@ function Header() {
                     Sign in
                   </Button>
                 )}
-                <Button href={isHome ? '/login?next=%2Fclient%2Fappointments%3Fbook%3D1' : '/'} size="md" color="gold">
+                <Button
+                  href={isHome ? undefined : '/'}
+                  onClick={isHome ? handleScrollToBooking : undefined}
+                  size="md"
+                  color="gold"
+                >
                   {isHome ? 'Book now' : 'Public site'}
                 </Button>
               </>
