@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '@hooks/useAuth';
 import api from '@api';
 import styles from './Home.module.scss';
 
 import BookingWidget from '@components/ui/BookingWidget/BookingWidget';
 
-import heroImage from '@assets/images/portfolio/hero-barbershop.webp';
-import fadeImage from '@assets/images/portfolio/skin-fade.webp';
-import beardImage from '@assets/images/portfolio/beard-sculpt.webp';
-import towelImage from '@assets/images/portfolio/hot-towel.webp';
+import heroImage from '@assets/images/portfolio/cut4.webp';
+import fadeImage from '@assets/images/portfolio/cut1.webp';
+import beardImage from '@assets/images/portfolio/cut2.webp';
+import towelImage from '@assets/images/portfolio/cut3.webp';
 
 const DEFAULT_SHOP = {
   name: 'BarberManager',
@@ -33,6 +34,7 @@ const FALLBACK_PORTFOLIO = [
 const FALLBACK_SERVICES = [
   {
     id: 'service-fade',
+    category: 'CORE',
     name: 'Signature fade',
     description: 'Consultation, tailored fade, line-up, and styled finish.',
     image: fadeImage,
@@ -41,6 +43,7 @@ const FALLBACK_SERVICES = [
   },
   {
     id: 'service-beard',
+    category: 'CORE',
     name: 'Beard sculpt',
     description: 'Precision shaping, clean detailing, and conditioning.',
     image: beardImage,
@@ -49,6 +52,7 @@ const FALLBACK_SERVICES = [
   },
   {
     id: 'service-ritual',
+    category: 'PREMIUM',
     name: 'Cut & hot towel ritual',
     description: 'A complete cut followed by a refined hot towel finish.',
     image: towelImage,
@@ -138,7 +142,12 @@ function Home() {
         <img className={styles.heroImage} src={heroImage} alt="Barber finishing a precision fade" />
         <div className={styles.heroShade} />
 
-        <div className={styles.heroContent}>
+        <motion.div
+          className={styles.heroContent}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
           <span className={styles.eyebrow}>Accra-ready booking · phone-secure account</span>
           <p className={styles.kicker}>{shop.tagline}</p>
           <h1>
@@ -157,11 +166,21 @@ function Home() {
           <div id="book" className={styles.bookingWidgetWrapper}>
             <BookingWidget onBookingComplete={handleBookingComplete} />
           </div>
-        </div>
+        </motion.div>
       </section>
 
       <main>
-        <section id="services" className={styles.section}>
+        <motion.section
+          id="services"
+          className={styles.section}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-100px' }}
+          variants={{
+            hidden: { opacity: 0, y: 40 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+          }}
+        >
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.eyebrow}>The service menu</span>
@@ -170,31 +189,72 @@ function Home() {
             <p>Clear timing and starting prices help you choose the right service before you reach the chair.</p>
           </div>
 
-          <div className={styles.serviceGrid}>
-            {services.map((service, index) => (
-              <article className={styles.serviceCard} key={service.id}>
-                <div className={styles.serviceImageWrap}>
-                  <img
-                    className={styles.serviceImage}
-                    src={getServiceImage(service, index)}
-                    alt={`${service.name} service`}
-                    loading={index > 2 ? 'lazy' : 'eager'}
-                  />
-                </div>
-                <div className={styles.serviceContent}>
-                  <div className={styles.serviceMeta}>
-                    <span>{service.duration_minutes} min</span>
-                    <strong>From {formatPrice(service.price)}</strong>
-                  </div>
-                  <h3>{service.name}</h3>
-                  <p>{service.description || 'A considered service tailored to your preferred finish.'}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+          <div className={styles.serviceCategoryGroups}>
+            {['CORE', 'TREATMENT', 'LOCS', 'PREMIUM'].map((cat) => {
+              const catServices = services.filter((s) => (s.category || 'CORE') === cat);
+              if (!catServices.length) return null;
 
-        <section id="signature-cuts" className={styles.section}>
+              const catNames = {
+                CORE: 'Core Grooming',
+                TREATMENT: 'Hair Treatments & Styling',
+                LOCS: 'Locs & Natural Hair',
+                PREMIUM: 'Premium & Wellness',
+              };
+
+              return (
+                <div key={cat} className={styles.categoryGroup}>
+                  <h3 className={styles.categoryTitle}>{catNames[cat]}</h3>
+                  <div className={styles.serviceGrid}>
+                    {catServices.map((service, index) => (
+                      <motion.article
+                        className={styles.serviceCard}
+                        key={service.id}
+                        whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                        onClick={() => {
+                          if (window.innerWidth <= 768) {
+                            window.dispatchEvent(new Event('openBookingSheet'));
+                          } else {
+                            document.getElementById('book').scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className={styles.serviceImageWrap}>
+                          <img
+                            className={styles.serviceImage}
+                            src={getServiceImage(service, index)}
+                            alt={`${service.name} service`}
+                            loading={index > 2 ? 'lazy' : 'eager'}
+                          />
+                        </div>
+                        <div className={styles.serviceContent}>
+                          <div className={styles.serviceMeta}>
+                            <span>{service.duration_minutes} min</span>
+                            <strong>From {formatPrice(service.price)}</strong>
+                          </div>
+                          <h3>{service.name}</h3>
+                          <p>{service.description || 'A considered service tailored to your preferred finish.'}</p>
+                        </div>
+                      </motion.article>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.section>
+
+        <motion.section
+          id="signature-cuts"
+          className={styles.section}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-100px' }}
+          variants={{
+            hidden: { opacity: 0, y: 40 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+          }}
+        >
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.eyebrow}>Our work</span>
@@ -204,7 +264,7 @@ function Home() {
           </div>
 
           <div className={styles.lookbook}>
-            <article className={`${styles.cutCard} ${styles.cutCardFeature}`}>
+            <motion.article className={`${styles.cutCard} ${styles.cutCardFeature}`} whileHover={{ scale: 1.02 }}>
               <img src={fadeImage} alt="Signature fade finish" />
               <div className={styles.cutOverlay}>
                 <div>
@@ -213,8 +273,8 @@ function Home() {
                   <p>Consultation, fade, and a sharp line-up.</p>
                 </div>
               </div>
-            </article>
-            <article className={styles.cutCard}>
+            </motion.article>
+            <motion.article className={styles.cutCard} whileHover={{ scale: 1.02 }}>
               <img src={beardImage} alt="Beard sculpt finish" />
               <div className={styles.cutOverlay}>
                 <div>
@@ -222,8 +282,8 @@ function Home() {
                   <h3>Beard sculpt</h3>
                 </div>
               </div>
-            </article>
-            <article className={styles.cutCard}>
+            </motion.article>
+            <motion.article className={styles.cutCard} whileHover={{ scale: 1.02 }}>
               <img src={towelImage} alt="Hot towel finish" />
               <div className={styles.cutOverlay}>
                 <div>
@@ -231,11 +291,21 @@ function Home() {
                   <h3>Hot towel ritual</h3>
                 </div>
               </div>
-            </article>
+            </motion.article>
           </div>
-        </section>
+        </motion.section>
 
-        <section id="how-it-works" className={styles.section}>
+        <motion.section
+          id="how-it-works"
+          className={styles.section}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-100px' }}
+          variants={{
+            hidden: { opacity: 0, y: 40 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+          }}
+        >
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.eyebrow}>How it works</span>
@@ -245,25 +315,35 @@ function Home() {
           </div>
 
           <div className={styles.steps}>
-            <article>
+            <motion.article whileHover={{ y: -5 }}>
               <span>1</span>
               <h3>Pick your barber & service</h3>
               <p>Choose from the team and the exact service you want, with prices and durations shown up front.</p>
-            </article>
-            <article>
+            </motion.article>
+            <motion.article whileHover={{ y: -5 }}>
               <span>2</span>
               <h3>Choose a real open slot</h3>
               <p>Every date and time shown is pulled from that barber&rsquo;s actual availability, not a mockup.</p>
-            </article>
-            <article>
+            </motion.article>
+            <motion.article whileHover={{ y: -5 }}>
               <span>3</span>
               <h3>Confirm with your phone</h3>
               <p>Verify with a one-time SMS code — no password to set or remember — and your slot is locked in.</p>
-            </article>
+            </motion.article>
           </div>
-        </section>
+        </motion.section>
 
-        <section id="faq" className={styles.section}>
+        <motion.section
+          id="faq"
+          className={styles.section}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-100px' }}
+          variants={{
+            hidden: { opacity: 0, y: 40 },
+            visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+          }}
+        >
           <div className={styles.faqSection}>
             <div className={styles.faqHeading}>
               <span className={styles.eyebrow}>FAQ</span>
@@ -298,8 +378,54 @@ function Home() {
               </details>
             </div>
           </div>
-        </section>
+        </motion.section>
       </main>
+
+      <nav className={styles.mobileDock} aria-label="Mobile Navigation">
+        <a
+          href="#book"
+          className={styles.navItem}
+          onClick={(e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        >
+          <span className={styles.navIcon}>⌂</span>
+          <small>Home</small>
+        </a>
+        <a
+          href="#services"
+          className={styles.navItem}
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById('services').scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
+          <span className={styles.navIcon}>☰</span>
+          <small>Services</small>
+        </a>
+        <a
+          href="#signature-cuts"
+          className={styles.navItem}
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById('signature-cuts').scrollIntoView({ behavior: 'smooth' });
+          }}
+        >
+          <span className={styles.navIcon}>📷</span>
+          <small>Gallery</small>
+        </a>
+        <a
+          href="#book"
+          className={styles.navBookBtn}
+          onClick={(e) => {
+            e.preventDefault();
+            window.dispatchEvent(new Event('openBookingSheet'));
+          }}
+        >
+          Book
+        </a>
+      </nav>
     </div>
   );
 }

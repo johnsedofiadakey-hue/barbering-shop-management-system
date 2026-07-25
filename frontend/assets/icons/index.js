@@ -39,6 +39,7 @@ import ScissorsIcon from './scissors.svg?react';
 import ImageIcon from './image.svg?react';
 import CheckIcon from './check.svg?react';
 import ArrowDownIcon from './arrow_down.svg?react';
+import InstagramIcon from './instagram.svg?react';
 
 const icons = {
   github: GithubIcon,
@@ -82,6 +83,7 @@ const icons = {
   image: ImageIcon,
   check: CheckIcon,
   arrow_down: ArrowDownIcon,
+  instagram: InstagramIcon,
 };
 
 export default icons;

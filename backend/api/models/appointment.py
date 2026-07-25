@@ -21,6 +21,20 @@ class AppointmentStatus(Enum):
         return [(status.value, status.name) for status in cls]
 
 
+class ServiceCategory(Enum):
+    """
+    Categories based on typical Ghanaian barbershop service menus.
+    """
+    CORE = 'CORE'               # Core Grooming (Haircuts, Fades, Shape-ups)
+    TREATMENT = 'TREATMENT'     # Hair Treatments & Styling (Dyeing, Shampooing)
+    LOCS = 'LOCS'               # Locs & Natural Hair (Retwists, Extensions)
+    PREMIUM = 'PREMIUM'         # Premium & Wellness (Facials, Massages, Hot Towel)
+
+    @classmethod
+    def choices(cls):
+        return [(choice.value, choice.name) for choice in cls]
+
+
 class Service(models.Model):
     """
     Represents a specific service that a barber offers to clients.
@@ -31,6 +45,12 @@ class Service(models.Model):
     """
     barber = models.ForeignKey(Barber, on_delete=models.CASCADE, related_name='services_offered')
     name = models.CharField(max_length=100)
+    category = models.CharField(
+        max_length=16, 
+        choices=ServiceCategory.choices(), 
+        default=ServiceCategory.CORE.value,
+        help_text="Categorizes the service for the public menu."
+    )
     description = models.CharField(max_length=240, blank=True)
     image = models.ImageField(upload_to='images/services/', null=True, blank=True)
     price = models.DecimalField(max_digits=6, decimal_places=2)
@@ -49,6 +69,7 @@ class Service(models.Model):
             'id': self.id,
             'barber_id': self.barber.id,
             'name': self.name,
+            'category': self.category,
             'description': self.description,
             'image': self.image.url if self.image else None,
             'price': float(self.price),

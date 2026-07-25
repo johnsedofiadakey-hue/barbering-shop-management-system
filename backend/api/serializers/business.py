@@ -43,6 +43,7 @@ class AdminServiceSerializer(serializers.ModelSerializer):
             'barber_id',
             'barber_name',
             'name',
+            'category',
             'description',
             'image',
             'duration_minutes',

@@ -36,10 +36,14 @@
   }
 
   .stepIndicator {
-    color: $text-dim;
-    font-size: 1.2rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    color: $color-gold;
+    background: rgba(197, 160, 89, 0.1);
+    border: 1px solid rgba(197, 160, 89, 0.2);
+    padding: 0.4rem 1.2rem;
+    border-radius: 99rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
   }
 
@@ -325,7 +329,7 @@
     left: 0;
     width: 100%;
     max-width: 100%;
-    padding: 3rem 2rem 2rem;
+    padding: 3rem 2rem 12rem;
     border-radius: 24px 24px 0 0;
     background: $color-main;
     border-top: 1px solid $border-surface;
@@ -338,6 +342,7 @@
     visibility: hidden;
     max-height: 90vh;
     overflow-y: auto;
+    overscroll-behavior: contain;
     
     &.sheetOpen {
       transform: translateY(0);
@@ -401,6 +406,8 @@
     z-index: 999;
     opacity: 1;
     animation: fadeIn 0.3s ease forwards;
+    touch-action: none;
+    overscroll-behavior: none;
   }
 
   /* Floating Action Button (FAB) */

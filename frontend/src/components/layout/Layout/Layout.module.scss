@@ -1,14 +1,12 @@
 @use '@styles/variables.module.scss' as *;
 
 .app {
-  height: 100vh;
+  min-height: 100vh;
 
   display: flex;
   flex-direction: column;
 
   .content {
-    overflow: hidden;
-
     flex-grow: 1;
 
     display: flex;
@@ -17,12 +15,10 @@
     .main {
       width: 100%;
       min-width: 0;
-      min-height: 0;
       background: $color-main;
 
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
     }
   }
 }

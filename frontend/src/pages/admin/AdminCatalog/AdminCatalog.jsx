@@ -129,45 +129,64 @@ function AdminCatalog() {
         </div>
 
         {services.length ? (
-          <div className={styles.serviceGrid}>
-            {services.map((service) => (
-              <article className={styles.serviceCard} key={service.id}>
-                <div className={styles.media}>
-                  {service.image ? (
-                    <img src={service.image} alt={`${service.name} service`} />
-                  ) : (
-                    <div className={styles.mediaPlaceholder}>
-                      <Icon name="scissors" size="lg" />
-                      <span>Add a service photo</span>
-                    </div>
-                  )}
-                  <span className={styles.barberBadge}>{service.barber_name}</span>
-                </div>
-                <div className={styles.cardBody}>
-                  <div className={styles.cardMeta}>
-                    <span>{service.duration_minutes} min</span>
-                    <strong>
-                      {currency} {Number(service.price).toFixed(0)}
-                    </strong>
+          <div className={styles.serviceCategoryGroups}>
+            {['CORE', 'TREATMENT', 'LOCS', 'PREMIUM'].map((cat) => {
+              const catServices = services.filter((s) => s.category === cat);
+              if (!catServices.length) return null;
+
+              const catNames = {
+                CORE: 'Core Grooming',
+                TREATMENT: 'Hair Treatments & Styling',
+                LOCS: 'Locs & Natural Hair',
+                PREMIUM: 'Premium & Wellness',
+              };
+
+              return (
+                <div key={cat} className={styles.categoryGroup}>
+                  <h3 className={styles.categoryTitle}>{catNames[cat]}</h3>
+                  <div className={styles.serviceGrid}>
+                    {catServices.map((service) => (
+                      <article className={styles.serviceCard} key={service.id}>
+                        <div className={styles.media}>
+                          {service.image ? (
+                            <img src={service.image} alt={`${service.name} service`} />
+                          ) : (
+                            <div className={styles.mediaPlaceholder}>
+                              <Icon name="scissors" size="lg" />
+                              <span>Add a service photo</span>
+                            </div>
+                          )}
+                          <span className={styles.barberBadge}>{service.barber_name}</span>
+                        </div>
+                        <div className={styles.cardBody}>
+                          <div className={styles.cardMeta}>
+                            <span>{service.duration_minutes} min</span>
+                            <strong>
+                              {currency} {Number(service.price).toFixed(0)}
+                            </strong>
+                          </div>
+                          <h3>{service.name}</h3>
+                          <p>{service.description || 'Add a short description customers can understand at a glance.'}</p>
+                          <div className={styles.cardActions}>
+                            <Button color="goldoutline" size="sm" onClick={() => setEditService(service)}>
+                              <Icon name="pen" size="ty" /> Edit & upload
+                            </Button>
+                            <Button
+                              color="actionbtn"
+                              size="sm"
+                              aria-label={`Delete ${service.name}`}
+                              onClick={() => setDeleteService(service)}
+                            >
+                              <Icon name="trash" size="ty" />
+                            </Button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                  <h3>{service.name}</h3>
-                  <p>{service.description || 'Add a short description customers can understand at a glance.'}</p>
-                  <div className={styles.cardActions}>
-                    <Button color="goldoutline" size="sm" onClick={() => setEditService(service)}>
-                      <Icon name="pen" size="ty" /> Edit & upload
-                    </Button>
-                    <Button
-                      color="actionbtn"
-                      size="sm"
-                      aria-label={`Delete ${service.name}`}
-                      onClick={() => setDeleteService(service)}
-                    >
-                      <Icon name="trash" size="ty" />
-                    </Button>
-                  </div>
                 </div>
-              </article>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className={styles.emptyState}>
@@ -274,7 +293,7 @@ function AdminCatalog() {
 
       <Modal
         open={createServiceOpen}
-        fields={{ barber_id: '', name: '', description: '', duration_minutes: 30, price: '', image: null }}
+        fields={{ barber_id: '', category: 'CORE', name: '', description: '', duration_minutes: 30, price: '', image: null }}
         action={{ submit: 'Publish service', loading: 'Publishing…' }}
         onSubmit={handleCreateService}
         onClose={() => setCreateServiceOpen(false)}
@@ -282,6 +301,19 @@ function AdminCatalog() {
         <Modal.Title icon="service">Add service</Modal.Title>
         <Modal.Description>Create a bookable menu item and add the image customers will see.</Modal.Description>
         <Input label="Barber" type="dropdown" name="barber_id" required fetcher={barberOptions} size="md" />
+        <Input
+          label="Category"
+          type="dropdown"
+          name="category"
+          required
+          fetcher={async () => [
+            { key: 'CORE', value: 'Core Grooming' },
+            { key: 'TREATMENT', value: 'Hair Treatments & Styling' },
+            { key: 'LOCS', value: 'Locs & Natural Hair' },
+            { key: 'PREMIUM', value: 'Premium & Wellness' },
+          ]}
+          size="md"
+        />
         <Input label="Service name" type="text" name="name" required maxLength={100} size="md" />
         <Input label="Description" type="text" name="description" maxLength={240} size="md" />
         <Input label="Duration (minutes)" type="number" name="duration_minutes" min="10" max="480" required size="md" />
@@ -295,6 +327,7 @@ function AdminCatalog() {
           editService
             ? {
                 barber_id: editService.barber_id,
+                category: editService.category || 'CORE',
                 name: editService.name,
                 description: editService.description || '',
                 duration_minutes: editService.duration_minutes,
@@ -310,6 +343,19 @@ function AdminCatalog() {
         <Modal.Title icon="pen">Edit service</Modal.Title>
         <Modal.Description>Update the menu details or choose a new image to replace the current one.</Modal.Description>
         <Input label="Barber" type="dropdown" name="barber_id" required fetcher={barberOptions} size="md" />
+        <Input
+          label="Category"
+          type="dropdown"
+          name="category"
+          required
+          fetcher={async () => [
+            { key: 'CORE', value: 'Core Grooming' },
+            { key: 'TREATMENT', value: 'Hair Treatments & Styling' },
+            { key: 'LOCS', value: 'Locs & Natural Hair' },
+            { key: 'PREMIUM', value: 'Premium & Wellness' },
+          ]}
+          size="md"
+        />
         <Input label="Service name" type="text" name="name" required maxLength={100} size="md" />
         <Input label="Description" type="text" name="description" maxLength={240} size="md" />
         <Input label="Duration (minutes)" type="number" name="duration_minutes" min="10" max="480" required size="md" />

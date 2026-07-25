@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { useForm } from '@hooks/useForm';
 import api from '@api';
 import styles from './Login.module.scss';
 
@@ -11,6 +12,41 @@ import Error from '@components/common/Error/Error';
 import Spinner from '@components/common/Spinner/Spinner';
 import Icon from '@components/common/Icon/Icon';
 import heroImage from '@assets/images/portfolio/hero-barbershop.webp';
+
+const GHANA_PREFIX = '+233';
+
+// Ghana mobile numbers are prefix + 9 digits (e.g. +233 24 000 0000). The country code is
+// fixed so the client only ever has to type the part that's actually theirs.
+function GhanaPhoneField({ disabled }) {
+  const { fields, handleChange } = useForm();
+  const digits = (fields.phone_number || '').replace(GHANA_PREFIX, '');
+
+  const handleDigitsChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 9);
+    handleChange({ target: { name: 'phone_number', value: raw ? `${GHANA_PREFIX}${raw}` : '' } });
+  };
+
+  const formatted = [digits.slice(0, 2), digits.slice(2, 5), digits.slice(5, 9)].filter(Boolean).join(' ');
+
+  return (
+    <label className={styles.phoneField}>
+      Mobile number
+      <div className={styles.phoneInputWrapper}>
+        <span className={styles.phonePrefix}>{GHANA_PREFIX}</span>
+        <input
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          placeholder="24 000 0000"
+          value={formatted}
+          onChange={handleDigitsChange}
+          disabled={disabled}
+          required
+        />
+      </div>
+    </label>
+  );
+}
 
 function Login({ initialStaffMode = false }) {
   const { loginWithOtp, loginWithFirebaseEmail, isAuthenticated, isLoggingIn, profile } = useAuth();
@@ -141,17 +177,7 @@ function Login({ initialStaffMode = false }) {
                   <h2>Enter your phone</h2>
                 </div>
               </div>
-              <Input
-                label="Mobile number"
-                name="phone_number"
-                type="tel"
-                autoComplete="tel"
-                inputMode="tel"
-                placeholder="+233 24 000 0000"
-                required
-                disabled={isSendingCode}
-                size="md"
-              />
+              <GhanaPhoneField disabled={isSendingCode} />
               <p className={styles.privacyNote}>
                 We only use this number for secure login and appointment updates. You stay signed in on this phone until you log
                 out.
@@ -273,8 +299,8 @@ function Login({ initialStaffMode = false }) {
                   'Verify & continue'
                 )}
               </Button>
-              <Button type="button" color="link" size="sm" onClick={() => setOtpPhone(null)} wide>
-                Use a different number
+              <Button type="button" color="secondary" size="sm" onClick={() => setOtpPhone(null)} wide disabled={isLoggingIn}>
+                &larr; Back to phone entry
               </Button>
               <Error />
             </Form>

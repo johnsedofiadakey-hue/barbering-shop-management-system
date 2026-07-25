@@ -61,11 +61,36 @@ function BookingWidget({ onBookingComplete }) {
 
   // Lock body scroll when mobile sheet is open
   useEffect(() => {
-    document.body.style.overflow = isMobileSheetOpen ? 'hidden' : '';
+    if (isMobileSheetOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${window.scrollY}px`; // Preserve scroll position visually
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+
     return () => {
       document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
     };
   }, [isMobileSheetOpen]);
+
+  // Listen for open event from external triggers (like the bottom nav)
+  useEffect(() => {
+    const handleOpen = () => setIsMobileSheetOpen(true);
+    window.addEventListener('openBookingSheet', handleOpen);
+    return () => window.removeEventListener('openBookingSheet', handleOpen);
+  }, []);
 
   // Load the real barber list + shop settings once
   useEffect(() => {
@@ -190,12 +215,6 @@ function BookingWidget({ onBookingComplete }) {
 
   return (
     <>
-      {/* Mobile FAB */}
-      <button className={styles.mobileFab} onClick={() => setIsMobileSheetOpen(true)} aria-label="Book Appointment">
-        <Icon name="calendar" />
-        <span>Book Appointment</span>
-      </button>
-
       {isMobileSheetOpen && <div className={styles.sheetBackdrop} onClick={() => setIsMobileSheetOpen(false)} />}
 
       <div className={`${styles.bookingWidget} glass-panel ${isMobileSheetOpen ? styles.sheetOpen : ''}`}>
@@ -203,15 +222,27 @@ function BookingWidget({ onBookingComplete }) {
 
         <div className={styles.widgetHeader}>
           {canGoBack ? (
-            <button type="button" className={styles.backBtn} onClick={handleBack}>
+            <button type="button" className={styles.backBtn} onClick={handleBack} style={{ minWidth: '70px' }}>
               <Icon name="left" size="sm" /> Back
             </button>
           ) : (
-            <span />
+            <span style={{ minWidth: '70px' }} />
           )}
           <span className={styles.stepIndicator}>
             Step {stepPosition} of {totalSteps}
           </span>
+          {isMobileSheetOpen ? (
+            <button
+              type="button"
+              className={styles.backBtn}
+              onClick={() => setIsMobileSheetOpen(false)}
+              style={{ minWidth: '70px', justifyContent: 'flex-end' }}
+            >
+              Close
+            </button>
+          ) : (
+            <span style={{ minWidth: '70px' }} />
+          )}
         </div>
 
         {step === 'barber' && (

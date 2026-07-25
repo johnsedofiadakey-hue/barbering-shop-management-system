@@ -3,26 +3,31 @@
 // ============================================================
 
 // Core palette
-$color-main: #0b0a09; // page canvas — deepest, behind everything
-$color-primary: #111010; // chrome bg (header/sidebar); also "text on gold" (#1a140b) role below
-$color-accent: #c5a059; // gold — active nav bg, primary accents
-$color-gold: #c5a059; // primary gold — CTAs, icons, stars
-$color-gold-strong: #d4b171; // gold hover / emphasis
-$color-secondary: #ece4d4; // primary heading/text on dark
-$color-on-dark: #f4eede; // brightest ivory — big numbers, H1
-$color-muted: #8f887c; // secondary / label text (warm)
-$color-ink-on-gold: #1a140b; // dark text/icon used on gold-filled elements (active nav, gold buttons)
+$color-main: #060504; // page canvas — ultra-deep, pure luxury
+$color-primary: #0a0807; // chrome bg
+$color-accent: #d8aa55; // richer gold
+$color-gold: #d8aa55; // premium gold
+$color-gold-strong: #f0c375; // gold hover / emphasis
+$color-secondary: #f2ebd9; // primary heading/text on dark
+$color-on-dark: #ffffff; // brightest ivory — big numbers, H1
+$color-muted: #a39c90; // secondary / label text (warm)
+$color-ink-on-gold: #120e06; // dark text/icon used on gold-filled elements
 
 // Elevated surfaces (warm charcoal). Cards use a subtle top-to-bottom gradient:
-$color-surface-top: #181410; // gradient start
-$color-surface-bottom: #141109; // gradient end
+$color-surface-top: #15110d; // gradient start
+$color-surface-bottom: #0e0b08; // gradient end
 // -> background: linear-gradient(180deg, $color-surface-top 0%, $color-surface-bottom 100%);
 
-$color-surface-panel-top: #161209; // large panels (Barbers table container, login card)
-$color-surface-panel-bottom: #120f08;
+// Glassmorphism tokens for premium overlay effects
+$color-glass-bg: rgba(10, 8, 7, 0.75);
+$color-glass-border: rgba(216, 170, 85, 0.15);
+$blur-premium: blur(16px);
 
-$color-surface-inset: #0f0c07; // input fields, insets
-$color-icon-chip-bg: #211a10; // gold icon circle background on dark
+$color-surface-panel-top: #120e0a; // large panels
+$color-surface-panel-bottom: #0b0906;
+
+$color-surface-inset: #090705; // input fields, insets
+$color-icon-chip-bg: #1c150c; // gold icon circle background on dark
 $color-footer-bg: #0d0b08;
 $color-table-head-bg: #17120a; // table header row background
 $color-row-hover-bg: #181209; // table row hover

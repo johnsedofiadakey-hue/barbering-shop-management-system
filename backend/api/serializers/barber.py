@@ -13,6 +13,7 @@ from ..models import (
     Appointment,
     AppointmentStatus,
     Service,
+    ServiceCategory,
 )
 
 
@@ -153,6 +154,11 @@ class CreateBarberServiceSerializer(BarberValidationMixin, ServiceValidationMixi
     Barber only: Creates a new service offering for a given barber.
     """
     name = serializers.CharField(required=True, max_length=100)
+    category = serializers.ChoiceField(
+        choices=[c.value for c in ServiceCategory],
+        default=ServiceCategory.CORE.value,
+        required=False
+    )
     description = serializers.CharField(required=False, allow_blank=True, max_length=240)
     image = serializers.ImageField(required=False, allow_null=True)
     price = serializers.DecimalField(required=True, max_digits=6, decimal_places=2, min_value=0)
@@ -172,6 +178,10 @@ class UpdateBarberServiceSerializer(BarberValidationMixin, ServiceValidationMixi
     Barber only: Updates a given existing service, for a given barber.
     """
     name = serializers.CharField(required=False, max_length=100)
+    category = serializers.ChoiceField(
+        choices=[c.value for c in ServiceCategory],
+        required=False
+    )
     description = serializers.CharField(required=False, allow_blank=True, max_length=240)
     image = serializers.ImageField(required=False, allow_null=True)
     price = serializers.DecimalField(required=False, max_digits=6, decimal_places=2, min_value=0)
@@ -181,7 +191,7 @@ class UpdateBarberServiceSerializer(BarberValidationMixin, ServiceValidationMixi
         attrs = self.validate_barber(attrs)
         attrs = self.validate_find_service(attrs)
 
-        if not any(field in attrs for field in ('name', 'description', 'image', 'price', 'duration_minutes')):
+        if not any(field in attrs for field in ('name', 'category', 'description', 'image', 'price', 'duration_minutes')):
             raise serializers.ValidationError('Provide at least one field to update the service.')
         
         if 'name' in attrs:
@@ -192,6 +202,9 @@ class UpdateBarberServiceSerializer(BarberValidationMixin, ServiceValidationMixi
     def update(self, instance, validated_data):
         if 'name' in validated_data:
             instance.name = validated_data['name']
+
+        if 'category' in validated_data:
+            instance.category = validated_data['category']
 
         if 'price' in validated_data:
             instance.price = validated_data['price']
