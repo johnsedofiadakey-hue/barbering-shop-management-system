@@ -41,6 +41,15 @@ export async function createClientAppointment(barberId, appointmentData) {
 }
 
 /**
+ * Starts (or restarts) a Paystack checkout for an appointment's deposit/full payment.
+ * Returns { authorization_url, reference } to redirect the client to.
+ */
+export async function payClientAppointment(appointmentId) {
+  const { data } = await api.instance.post(ENDPOINTS.client.payAppointment(appointmentId));
+  return data;
+}
+
+/**
  * Cancels a specific appointment for the client.
  */
 export async function cancelClientAppointment(appointmentId) {

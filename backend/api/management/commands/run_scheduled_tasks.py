@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
 
-from api.tasks import complete_ongoing_appointments, send_appointment_reminders
+from api.tasks import complete_ongoing_appointments, send_appointment_reminders, release_unpaid_appointments
 
 
 class Command(BaseCommand):
@@ -9,6 +9,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         complete_ongoing_appointments()
+        release_unpaid_appointments()
         if settings.SMS_BACKEND == 'twilio':
             send_appointment_reminders()
         else:

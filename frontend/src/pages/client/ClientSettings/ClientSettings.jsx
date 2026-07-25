@@ -93,9 +93,14 @@ function ClientSettings() {
   /**
    * Validate at least one field is provided, matching backend logic
    */
-  const validateUpdateProfile = ({ username, name, surname }) => {
-    if ((!username || username.trim() === '') && (!name || name.trim() === '') && (!surname || surname.trim() === '')) {
-      return 'Provide at least one field to update: Username, Name or Surname.';
+  const validateUpdateProfile = ({ username, name, surname, email }) => {
+    if (
+      (!username || username.trim() === '') &&
+      (!name || name.trim() === '') &&
+      (!surname || surname.trim() === '') &&
+      (!email || email.trim() === '')
+    ) {
+      return 'Provide at least one field to update: Username, Name, Surname or Email.';
     }
     return undefined;
   };
@@ -104,13 +109,14 @@ function ClientSettings() {
    * Handles form submission for updating the profile data
    * Send only the filled fields to the API
    */
-  const handleUpdateProfile = async ({ username, name, surname }) => {
+  const handleUpdateProfile = async ({ username, name, surname, email }) => {
     setIsUpdatingProfile(true);
 
     const payload = {};
     if (username && username.trim() !== '') payload.username = username.trim();
     if (name && name.trim() !== '') payload.name = name.trim();
     if (surname && surname.trim() !== '') payload.surname = surname.trim();
+    if (email && email.trim() !== '') payload.email = email.trim();
 
     try {
       await api.client.updateClientProfile(payload);
@@ -186,7 +192,7 @@ function ClientSettings() {
           <section className={styles.updateProfileSection}>
             <Form
               className={styles.updateProfileForm}
-              initialFields={{ username: '', name: '', surname: '' }}
+              initialFields={{ username: '', name: '', surname: '', email: '' }}
               onSubmit={handleUpdateProfile}
               validate={validateUpdateProfile} //
             >
@@ -221,6 +227,19 @@ function ClientSettings() {
                   name="surname"
                   type="text"
                   placeholder={profile.surname}
+                  size="md"
+                  disabled={isUpdatingProfile}
+                />
+              </div>
+
+              <div className={styles.inputGroup}>
+                <Input
+                  label="Email (optional)"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder={profile.email || 'you@example.com'}
+                  helperText="Get an order confirmation and a one-tap link to your portal. Your phone is still how you sign in."
                   size="md"
                   disabled={isUpdatingProfile}
                 />

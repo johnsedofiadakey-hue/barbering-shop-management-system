@@ -128,6 +128,29 @@ export async function verifyOtp(phoneNumber, code) {
 }
 
 /**
+ * Requests a one-time sign-in link emailed to the given address, if it matches an account.
+ */
+export async function requestMagicLink(email) {
+  const { data } = await api.instance.post(ENDPOINTS.auth.requestMagicLink, { email });
+  return data;
+}
+
+/**
+ * Exchanges a valid magic-link uid/token pair for a JWT session. Stores the received tokens.
+ */
+export async function verifyMagicLink(uidb64, token) {
+  const { data } = await api.instance.post(ENDPOINTS.auth.verifyMagicLink(uidb64, token));
+  const { user, token: session } = data;
+
+  setTokens({
+    access: session.access_token,
+    refresh: session.refresh_token,
+  });
+
+  return { user, token: session, requires_profile_setup: Boolean(data.requires_profile_setup) };
+}
+
+/**
  * Signs in a staff (admin/barber) account that has been explicitly linked to a Firebase
  * identity (via the `create_firebase_admin` management command). Stores the received tokens.
  */

@@ -63,7 +63,36 @@ class AppointmentLocation(Enum):
     @classmethod
     def choices(cls):
         return [(location.value, location.name) for location in cls]
-    
+
+
+class PaymentChoice(Enum):
+    """
+    What the client chose to secure their booking with, at the time they booked.
+    """
+    NONE = 'NONE'
+    DEPOSIT = 'DEPOSIT'
+    FULL = 'FULL'
+
+    @classmethod
+    def choices(cls):
+        return [(choice.value, choice.name) for choice in cls]
+
+
+class PaymentStatus(Enum):
+    """
+    UNPAID: no payment required (PaymentChoice.NONE) or not yet attempted.
+    PENDING: a Paystack transaction was initialized; the slot is held until `payment_deadline`.
+    PAID: payment confirmed via the Paystack webhook.
+    """
+    UNPAID = 'UNPAID'
+    PENDING = 'PENDING'
+    PAID = 'PAID'
+
+    @classmethod
+    def choices(cls):
+        return [(status.value, status.name) for status in cls]
+
+
 
 class Appointment(models.Model):
     """
@@ -90,6 +119,15 @@ class Appointment(models.Model):
     confirmation_sent_at = models.DateTimeField(null=True, blank=True)
     reminder_sent_at = models.DateTimeField(null=True, blank=True)
     notification_error = models.CharField(max_length=500, blank=True)
+
+    # Payment (Paystack). An unpaid PENDING hold is released back into availability by a
+    # periodic task if the client doesn't pay before `payment_deadline` — see api.tasks.
+    payment_choice = models.CharField(max_length=8, choices=PaymentChoice.choices(), default=PaymentChoice.NONE.value)
+    payment_status = models.CharField(max_length=8, choices=PaymentStatus.choices(), default=PaymentStatus.UNPAID.value)
+    payment_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    payment_reference = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    payment_deadline = models.DateTimeField(null=True, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -169,6 +207,11 @@ class Appointment(models.Model):
             'reminder_sent_at': self.reminder_sent_at,
             'notification_error': self.notification_error,
             'can_modify': self.can_modify,
+            'payment_choice': self.payment_choice,
+            'payment_status': self.payment_status,
+            'payment_amount': float(self.payment_amount),
+            'payment_deadline': self.payment_deadline,
+            'paid_at': self.paid_at,
         }
 
 

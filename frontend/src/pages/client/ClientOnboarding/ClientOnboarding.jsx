@@ -24,10 +24,12 @@ function ClientOnboarding() {
   }, [location.search]);
   const continueLabel = nextPath.startsWith('/client/appointments') ? 'Continue to booking' : 'Continue to my account';
 
-  const handleCompleteProfile = async ({ name, surname, image }) => {
+  const handleCompleteProfile = async ({ name, surname, email, image }) => {
     setIsSaving(true);
     try {
-      await api.client.updateClientProfile({ name: name.trim(), surname: surname.trim() });
+      const payload = { name: name.trim(), surname: surname.trim() };
+      if (email && email.trim() !== '') payload.email = email.trim();
+      await api.client.updateClientProfile(payload);
       if (image) await api.image.uploadProfileImage(image);
       const { profile: updatedProfile } = await api.client.getClientProfile();
       setProfile(updatedProfile);
@@ -52,7 +54,7 @@ function ClientOnboarding() {
 
         <Form
           className={styles.form}
-          initialFields={{ name: profile?.name || '', surname: profile?.surname || '', image: null }}
+          initialFields={{ name: profile?.name || '', surname: profile?.surname || '', email: '', image: null }}
           onSubmit={handleCompleteProfile}
           validate={({ name, surname }) => (!name?.trim() || !surname?.trim() ? 'Enter your first and last name.' : undefined)}
         >
@@ -68,6 +70,16 @@ function ClientOnboarding() {
               size="md"
             />
           </div>
+          <Input
+            label="Email (optional)"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            helperText="Get an order confirmation and a one-tap link to your portal. Your phone still does the signing in."
+            disabled={isSaving}
+            size="md"
+          />
           <div className={styles.photoField}>
             <span className={styles.photoIcon}>
               <Icon name="image" size="md" />

@@ -106,6 +106,21 @@ function AuthProvider({ children }) {
   };
 
   /**
+   * Handles client magic-link login (verify uid/token -> store tokens -> fetch profile).
+   */
+  const loginWithMagicLink = async (uidb64, token) => {
+    setIsLoggingIn(true);
+
+    try {
+      const session = await api.auth.verifyMagicLink(uidb64, token); // Any exceptions get caught by the caller
+      await fetchProfile();
+      return session;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  /**
    * Logout for manual invocation or on refresh error, clears tokens
    */
   const logout = async () => {
@@ -129,8 +144,9 @@ function AuthProvider({ children }) {
         isFetchingProfile, // passed to handle loading status
         setProfile, // to always set latest profile data
 
-        isLoggingIn, // only true during loginWithOtp() / loginWithFirebaseEmail()
+        isLoggingIn, // only true during loginWithOtp() / loginWithMagicLink() / loginWithFirebaseEmail()
         loginWithOtp,
+        loginWithMagicLink,
         loginWithFirebaseEmail,
 
         isLoggingOut, // only true during logout()

@@ -6,6 +6,20 @@
   padding: clamp(2rem, 4vw, 5rem);
 }
 
+.payment-banner {
+  margin-bottom: 1.6rem;
+  padding: 1.2rem 1.6rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid $border-gold-dim;
+  border-radius: 1.4rem;
+  background: rgba(197, 160, 89, 0.1);
+  color: $color-gold;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .page-header {
   margin-bottom: 2.2rem;
   display: flex;
@@ -75,6 +89,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.status-tags {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .status-tag {
@@ -258,6 +279,7 @@
 .barber-choice,
 .service-choice,
 .location-choices > button,
+.payment-choices > button,
 .date-chips > button,
 .time-chips > button {
   border: 1px solid $border-subtle;
@@ -429,6 +451,40 @@
   }
 }
 
+.payment-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+
+  > button {
+    min-width: 0;
+    padding: 1.2rem;
+    border-radius: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    text-align: left;
+
+    strong {
+      color: $text-strong;
+      font-size: 1.2rem;
+    }
+
+    small {
+      color: $text-dim;
+      font-size: 0.95rem;
+    }
+  }
+}
+
+.payment-note {
+  margin-top: -0.4rem;
+  color: $text-dim;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
 .confirmation {
   display: grid;
   gap: 0.8rem;
@@ -495,7 +551,8 @@
       padding: 0;
       border-radius: 50%;
 
-      span {
+      // Target only the trailing text label, not the icon's own wrapper span
+      > span:last-child {
         display: none;
       }
     }
@@ -532,7 +589,8 @@
 
   .barber-choice-grid,
   .service-choice-grid,
-  .location-choices {
+  .location-choices,
+  .payment-choices {
     grid-template-columns: 1fr;
   }
 
@@ -555,7 +613,7 @@
   }
 }
 
-@media (max-width: 23em) {
+@media (max-width: 27em) {
   .page-header {
     align-items: flex-start;
     flex-direction: column;

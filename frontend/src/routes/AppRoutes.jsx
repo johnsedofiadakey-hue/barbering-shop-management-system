@@ -6,6 +6,7 @@ import Layout from '@components/layout/Layout/Layout';
 
 import Home from '@pages/Home/Home';
 import Login from '@pages/Login/Login';
+import MagicLink from '@pages/MagicLink/MagicLink';
 import RegisterBarber from '@pages/RegisterBarber/RegisterBarber';
 import NotFound from '@pages/NotFound/NotFound';
 
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/staff-login" element={<Login initialStaffMode />} />
         <Route path="/register/:uidb64/:token" element={<RegisterBarber />} />
+        <Route path="/magic/:uidb64/:token" element={<MagicLink />} />
 
         {/* Shortcut redirects (from /:page to  /:role/:page) */}
         <Route path="dashboard" element={protectedRoute(<RoleRedirect />)} />

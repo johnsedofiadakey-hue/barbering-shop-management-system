@@ -193,6 +193,67 @@
     }
   }
 
+  .paymentToggle {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .paymentLabel {
+    color: $text-muted;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+
+  .paymentOptions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+
+    button {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.3rem;
+      padding: 1.1rem 1.2rem;
+      border: 1px solid $border-subtle;
+      border-radius: $border-radius-panel;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+
+      strong {
+        color: $text-strong;
+        font-size: 1.3rem;
+      }
+
+      small {
+        color: $text-muted;
+        font-size: 1.1rem;
+      }
+
+      &:hover {
+        border-color: $border-gold-dim;
+      }
+
+      &.selected {
+        border-color: $color-gold;
+        background: rgba(197, 160, 89, 0.12);
+
+        small {
+          color: $color-gold;
+        }
+      }
+    }
+  }
+
+  .paymentNote {
+    color: $text-dim;
+    font-size: 1.2rem;
+    line-height: 1.5;
+  }
+
   .addressField {
     display: flex;
     flex-direction: column;
@@ -281,6 +342,10 @@
     &.sheetOpen {
       transform: translateY(0);
       visibility: visible;
+    }
+
+    .paymentOptions {
+      grid-template-columns: 1fr;
     }
 
     .layout {

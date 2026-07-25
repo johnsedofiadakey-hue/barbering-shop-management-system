@@ -48,15 +48,24 @@ function ClientAppointments() {
   const prefillSlot = queryParams.get('bookSlot');
   const prefillLocation = queryParams.get('bookLocation');
   const prefillAddress = queryParams.get('bookAddress');
+  const prefillPayment = queryParams.get('bookPayment');
   const isFullyPrefilled = Boolean(preselectBarberId && prefillServices && prefillDate && prefillSlot);
+  const paymentCallback = queryParams.get('payment') === 'callback';
 
   const [appointments, setAppointments] = useState([]);
 
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
   const [isLoadingBarberProfiles, setIsLoadingBarberProfiles] = useState(true);
+  const [paymentBanner, setPaymentBanner] = useState(paymentCallback);
 
   const [barbers, setBarbers] = useState({}); // barberId -> profile
-  const [shop, setShop] = useState({ currency_symbol: 'GH₵', home_visits_enabled: true, home_visit_fee: 0 });
+  const [shop, setShop] = useState({
+    currency_symbol: 'GH₵',
+    home_visits_enabled: true,
+    home_visit_fee: 0,
+    payments_enabled: false,
+    booking_deposit_percent: 20,
+  });
 
   // Popup states
   const [bookPopup, setBookPopup] = useState(Boolean(preselectBarberId || directBooking));
@@ -73,6 +82,7 @@ function ClientAppointments() {
     slot: prefillSlot || '',
     location_type: prefillLocation || 'SHOP',
     home_address: prefillAddress || '',
+    payment_choice: prefillPayment || 'NONE',
     notes: '',
   });
 
@@ -141,6 +151,25 @@ function ClientAppointments() {
   }, [appointments, fetchBarberProfiles]);
 
   /**
+   * Returning from Paystack: the webhook that marks payment PAID can land a few seconds
+   * after this redirect, so show a "confirming" banner and give it one extra refresh.
+   */
+  useEffect(() => {
+    if (!paymentCallback) return;
+
+    const params = new URLSearchParams(location.search);
+    params.delete('payment');
+    navigate({ search: params.toString() }, { replace: true });
+
+    const timer = setTimeout(() => {
+      fetchAppointments();
+      setPaymentBanner(false);
+    }, 4000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentCallback]);
+
+  /**
    *  If query param is present and modal isn't open, open it and preselect barber
    */
   useEffect(() => {
@@ -158,13 +187,14 @@ function ClientAppointments() {
         slot: prefillSlot || fields.slot,
         location_type: prefillLocation || fields.location_type,
         home_address: prefillAddress || fields.home_address,
+        payment_choice: prefillPayment || fields.payment_choice,
       }));
       setBookStepIndex(isFullyPrefilled ? 2 : 0);
     }
 
     // Remove the params immediately so closing won't reopen the modal
     const params = new URLSearchParams(location.search);
-    ['bookBarber', 'book', 'bookServices', 'bookDate', 'bookSlot', 'bookLocation', 'bookAddress'].forEach((key) =>
+    ['bookBarber', 'book', 'bookServices', 'bookDate', 'bookSlot', 'bookLocation', 'bookAddress', 'bookPayment'].forEach((key) =>
       params.delete(key),
     );
     navigate({ search: params.toString() }, { replace: true });
@@ -184,6 +214,7 @@ function ClientAppointments() {
       slot: '',
       location_type: appointment.location_type || 'SHOP',
       home_address: appointment.home_address || '',
+      payment_choice: 'NONE',
       notes: '',
     });
     setBookStepIndex(0);
@@ -192,7 +223,16 @@ function ClientAppointments() {
   const closeBookPopup = () => {
     setBookPopup(false);
     setBookStepIndex(0);
-    setBookFields({ barber_id: '', services: [], date: '', slot: '', location_type: 'SHOP', home_address: '', notes: '' });
+    setBookFields({
+      barber_id: '',
+      services: [],
+      date: '',
+      slot: '',
+      location_type: 'SHOP',
+      home_address: '',
+      payment_choice: 'NONE',
+      notes: '',
+    });
   };
 
   // Cancel apointment popup state handlers
@@ -204,10 +244,39 @@ function ClientAppointments() {
   /**
    * Handles booking appointmentss
    */
-  const handleBookAppointment = async ({ barber_id, services, date, slot, location_type, home_address, notes }) => {
-    await api.client.createClientAppointment(barber_id, { services, date, slot, location_type, home_address, notes });
+  const handleBookAppointment = async ({
+    barber_id,
+    services,
+    date,
+    slot,
+    location_type,
+    home_address,
+    payment_choice,
+    notes,
+  }) => {
+    const result = await api.client.createClientAppointment(barber_id, {
+      services,
+      date,
+      slot,
+      location_type,
+      home_address,
+      payment_choice,
+      notes,
+    });
+
+    if (payment_choice && payment_choice !== 'NONE' && result.appointment_id) {
+      const { authorization_url } = await api.client.payClientAppointment(result.appointment_id);
+      window.location.href = authorization_url; // Full-page redirect to Paystack's hosted checkout
+      return;
+    }
+
     closeBookPopup();
     await fetchAppointments();
+  };
+
+  const handlePayNow = async (appointmentId) => {
+    const { authorization_url } = await api.client.payClientAppointment(appointmentId);
+    window.location.href = authorization_url;
   };
 
   const handleRescheduleAppointment = async (appointmentId, { date, slot }) => {
@@ -563,6 +632,45 @@ function ClientAppointments() {
             helperText="Include your area and a clear landmark."
           />
         )}
+
+        {shop.payments_enabled && (
+          <div className={styles.choiceSection}>
+            <div className={styles.choiceHeading}>
+              <span>4</span>
+              <div>
+                <strong>Secure your booking</strong>
+                <small>An unpaid hold is released after a while so someone else can take the slot</small>
+              </div>
+            </div>
+            <div className={styles.paymentChoices}>
+              <button
+                type="button"
+                className={fields.payment_choice === 'NONE' ? styles.selectedChoice : ''}
+                onClick={() => chooseValue('payment_choice', 'NONE')}
+              >
+                <strong>No payment</strong>
+                <small>Pay at the shop</small>
+              </button>
+              <button
+                type="button"
+                className={fields.payment_choice === 'DEPOSIT' ? styles.selectedChoice : ''}
+                onClick={() => chooseValue('payment_choice', 'DEPOSIT')}
+              >
+                <strong>{shop.booking_deposit_percent}% deposit</strong>
+                <small>Pay online now</small>
+              </button>
+              <button
+                type="button"
+                className={fields.payment_choice === 'FULL' ? styles.selectedChoice : ''}
+                onClick={() => chooseValue('payment_choice', 'FULL')}
+              >
+                <strong>Pay in full</strong>
+                <small>Pay online now</small>
+              </button>
+            </div>
+          </div>
+        )}
+
         <Input
           name="notes"
           label="Notes for your barber"
@@ -630,6 +738,9 @@ function ClientAppointments() {
     // Find selected barber and services
     const selectedBarber = barbers.find((barber) => String(barber.id) === String(fields.barber_id));
     const selectedServices = services.filter((service) => fields.services?.includes(String(service.id)));
+    const totalDue =
+      selectedServices.reduce((sum, service) => sum + Number(service.price || 0), 0) +
+      (fields.location_type === 'HOME' ? Number(shop.home_visit_fee || 0) : 0);
 
     return (
       <div className={styles.confirmation}>
@@ -706,6 +817,30 @@ function ClientAppointments() {
             </div>
           </div>
         </div>
+
+        {fields.payment_choice && fields.payment_choice !== 'NONE' && (
+          <div className={styles.confirmRow}>
+            <div className={styles.confirmBlock}>
+              <Icon name="revenue" size="ty" />
+              <span className={styles.confirmLabel}>Payment:</span>
+            </div>
+            <div className={styles.confirmContent}>
+              <div className={styles.confirmValue}>
+                {fields.payment_choice === 'FULL' ? (
+                  <>
+                    Pay in full — {shop.currency_symbol}
+                    {totalDue.toFixed(0)} now
+                  </>
+                ) : (
+                  <>
+                    {shop.booking_deposit_percent}% deposit — {shop.currency_symbol}
+                    {(totalDue * (shop.booking_deposit_percent / 100)).toFixed(0)} now
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -715,6 +850,12 @@ function ClientAppointments() {
   return (
     <>
       <div className={styles.appointmentsPage}>
+        {paymentBanner && (
+          <div className={styles.paymentBanner}>
+            <Icon name="check" size="sm" />
+            <span>Payment received — confirming your booking. This can take a few seconds.</span>
+          </div>
+        )}
         <header className={styles.pageHeader}>
           <div>
             <span className={styles.eyebrow}>Your schedule</span>
@@ -765,12 +906,19 @@ function ClientAppointments() {
                 <article className={`${styles.appointmentCard} ${isActive ? styles.activeAppointment : ''}`} key={appointment.id}>
                   <div className={styles.cardHeader}>
                     <Profile profile={barbers[appointment.barber_id]} loading={isLoadingBarberProfiles} />
-                    <Tag
-                      className={styles.statusTag}
-                      color={appointment.status === 'COMPLETED' ? 'green' : isActive ? 'yellow' : 'red'}
-                    >
-                      {getClientStatusLabel(appointment.status, appointment.date)}
-                    </Tag>
+                    <div className={styles.statusTags}>
+                      {appointment.payment_status === 'PENDING' && (
+                        <Tag className={styles.statusTag} color="yellow">
+                          Payment pending
+                        </Tag>
+                      )}
+                      <Tag
+                        className={styles.statusTag}
+                        color={appointment.status === 'COMPLETED' ? 'green' : isActive ? 'yellow' : 'red'}
+                      >
+                        {getClientStatusLabel(appointment.status, appointment.date)}
+                      </Tag>
+                    </div>
                   </div>
 
                   <div className={styles.scheduleBlock}>
@@ -801,6 +949,12 @@ function ClientAppointments() {
                   </div>
 
                   <div className={styles.cardActions}>
+                    {appointment.payment_status === 'PENDING' && (
+                      <Button type="button" size="md" color="gold" onClick={() => handlePayNow(appointment.id)}>
+                        <Icon name="revenue" size="sm" />
+                        Pay now
+                      </Button>
+                    )}
                     {appointment.can_modify ? (
                       <>
                         <Button type="button" size="md" color="goldoutline" onClick={() => openReschedulePopup(appointment)}>

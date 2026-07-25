@@ -161,6 +161,22 @@
   gap: 0.8rem;
 }
 
+.magic-link-sent {
+  display: grid;
+  gap: 1.4rem;
+  text-align: center;
+
+  p {
+    color: $text-body;
+    font-size: 1.4rem;
+    line-height: 1.6;
+
+    strong {
+      color: $color-gold;
+    }
+  }
+}
+
 .mode-switch {
   display: flex;
   align-items: center;

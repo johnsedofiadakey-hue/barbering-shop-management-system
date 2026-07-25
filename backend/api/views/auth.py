@@ -1,8 +1,9 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-from rest_framework.decorators import api_view, permission_classes, authentication_classes, parser_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes, parser_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework import status
 from ..serializers import (
     GetCurrentUserSerializer,
@@ -12,7 +13,16 @@ from ..serializers import (
     RefreshTokenCustomSerializer,
     FirebasePhoneLoginSerializer,
     FirebaseStaffLoginSerializer,
+    RequestMagicLinkSerializer,
+    VerifyMagicLinkSerializer,
 )
+
+
+class MagicLinkRequestThrottle(AnonRateThrottle):
+    """
+    Per-IP throttle for magic-link requests (mirrors the OTP request throttle).
+    """
+    scope = 'magic_link_request'
 
 
 @extend_schema(
@@ -73,6 +83,52 @@ def get_email_from_token(request, uidb64, token):
     serializer = GetEmailFromTokenSerializer(data={}, context={'uidb64': uidb64, 'token': token})
     serializer.is_valid(raise_exception=True) 
     
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    methods=['POST'],
+    request=RequestMagicLinkSerializer,
+    responses={200: OpenApiResponse(description="If the email matches an account, a sign-in link was emailed.")},
+    description="Client only: Emails a one-time sign-in link to a client's email on file, if any.",
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+@throttle_classes([MagicLinkRequestThrottle])
+@parser_classes([JSONParser])
+def request_magic_link(request):
+    """
+    Emails a one-time sign-in link to a client's email on file, if any. Always
+    responds the same way so this can't be used to enumerate registered emails.
+    """
+    serializer = RequestMagicLinkSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    return Response({'detail': 'If that email is on an account, a sign-in link is on its way.'}, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    methods=['POST'],
+    request=VerifyMagicLinkSerializer,
+    responses={
+        200: VerifyMagicLinkSerializer,
+        400: OpenApiResponse(description="Invalid or expired link."),
+    },
+    description="Client only: Exchanges a valid magic-link uid/token pair for a JWT session.",
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+@parser_classes([JSONParser])
+def verify_magic_link(request, uidb64, token):
+    """
+    Exchanges a valid magic-link uid/token pair for a JWT session.
+    """
+    serializer = VerifyMagicLinkSerializer(data={}, context={'uidb64': uidb64, 'token': token})
+    serializer.is_valid(raise_exception=True)
+
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 

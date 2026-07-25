@@ -10,6 +10,8 @@ export const ENDPOINTS = {
     refresh: '/auth/refresh-token/',
     requestOtp: '/auth/otp/request/',
     verifyOtp: '/auth/otp/verify/',
+    requestMagicLink: '/auth/magic-link/request/',
+    verifyMagicLink: (uidb64, token) => `/auth/magic-link/${uidb64}/${token}/`,
     firebasePhone: '/auth/firebase/phone/',
     firebaseStaff: '/auth/firebase/staff/',
     registerBarber: (uidb64, token) => `/auth/register/${uidb64}/${token}/`,
@@ -51,6 +53,7 @@ export const ENDPOINTS = {
     createAppointment: (barberId) => `/client/appointments/barbers/${barberId}/`,
     appointment: (appointmentId) => `/client/appointments/${appointmentId}/`,
     rescheduleAppointment: (appointmentId) => `/client/appointments/${appointmentId}/`,
+    payAppointment: (appointmentId) => `/client/appointments/${appointmentId}/pay/`,
     barbers: '/client/barbers/',
   },
 

@@ -1,3 +1,6 @@
+from decimal import Decimal
+from datetime import timedelta
+from django.conf import settings
 from django.utils import timezone
 from django.db import transaction
 from rest_framework import serializers
@@ -5,6 +8,7 @@ from ..utils import (
     ClientValidationMixin,
     BarberValidationMixin,
     UsernameValidationMixin,
+    EmailValidationMixin,
     AppointmentValidationMixin,
     ReviewValidationMixin,
     GetClientsMixin,
@@ -13,12 +17,14 @@ from ..utils import (
     GetReviewsMixin,
 )
 from ..models import (
-    Appointment, 
-    Service, 
+    Appointment,
+    Service,
     AppointmentService,
     Review,
-    AppointmentStatus, 
+    AppointmentStatus,
     AppointmentLocation,
+    PaymentChoice,
+    PaymentStatus,
     ShopSettings,
 )
 
@@ -36,7 +42,7 @@ class GetClientProfileSerializer(ClientValidationMixin, GetClientsMixin, seriali
         return {'profile': self.get_client_private(client) }
 
 
-class UpdateClientProfileSerializer(ClientValidationMixin, UsernameValidationMixin, serializers.Serializer):
+class UpdateClientProfileSerializer(ClientValidationMixin, UsernameValidationMixin, EmailValidationMixin, serializers.Serializer):
     """
     Client only: Updates general informations about a given client.
     """
@@ -44,6 +50,9 @@ class UpdateClientProfileSerializer(ClientValidationMixin, UsernameValidationMix
     name = serializers.CharField(required=False)
     surname = serializers.CharField(required=False)
     phone_number = serializers.CharField(required=False, max_length=16)
+    # Optional: lets the client receive booking confirmations and a magic sign-in link by email.
+    # Phone/OTP remains the only required login method — this never replaces it.
+    email = serializers.EmailField(required=False, allow_blank=True)
 
     def validate(self, attrs):
         attrs = self.validate_client(attrs)
@@ -53,11 +62,14 @@ class UpdateClientProfileSerializer(ClientValidationMixin, UsernameValidationMix
                 'phone_number': 'Phone number changes require a new verified login. Contact support to transfer this account.'
             })
 
-        if not any(field in attrs for field in ('username', 'name', 'surname')):
-            raise serializers.ValidationError('You must provide at least one field: username, name or surname.')
-        
+        if not any(field in attrs for field in ('username', 'name', 'surname', 'email')):
+            raise serializers.ValidationError('You must provide at least one field: username, name, surname or email.')
+
         if 'username' in attrs:
             attrs = self.validate_username_unique(attrs, user_instance=attrs['client'])
+
+        if attrs.get('email'):
+            attrs = self.validate_email_unique(attrs, user_instance=attrs['client'])
 
         return attrs
 
@@ -67,10 +79,13 @@ class UpdateClientProfileSerializer(ClientValidationMixin, UsernameValidationMix
 
         if 'name' in validated_data:
             instance.name = validated_data['name']
-        
+
         if 'surname' in validated_data:
             instance.surname = validated_data['surname']
-        
+
+        if 'email' in validated_data:
+            instance.email = validated_data['email'] or None
+
         instance.save()
         return instance
 
@@ -113,12 +128,18 @@ class CreateClientAppointmentSerializer(ClientValidationMixin, BarberValidationM
     location_type = serializers.ChoiceField(required=False, choices=AppointmentLocation.choices(), default=AppointmentLocation.SHOP.value)
     home_address = serializers.CharField(required=False, allow_blank=True, max_length=255)
     notes = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    payment_choice = serializers.ChoiceField(required=False, choices=PaymentChoice.choices(), default=PaymentChoice.NONE.value)
 
     def validate(self, attrs):
+        from ..utils import paystack
+
         attrs = self.validate_client(attrs)
         attrs = self.validate_barber(attrs)
         attrs = self.validate_services_belong_to_barber(attrs)
         shop = ShopSettings.load()
+
+        if attrs.get('payment_choice', PaymentChoice.NONE.value) != PaymentChoice.NONE.value and not paystack.is_configured():
+            raise serializers.ValidationError('Online payment is not available right now — book without paying instead.')
 
         if attrs['location_type'] == AppointmentLocation.HOME.value:
             if not shop.home_visits_enabled:
@@ -140,17 +161,35 @@ class CreateClientAppointmentSerializer(ClientValidationMixin, BarberValidationM
         date = validated_data['date']
         slot = validated_data['slot']
         services = validated_data['services']
+        payment_choice = validated_data.get('payment_choice', PaymentChoice.NONE.value)
+        travel_fee = validated_data.get('travel_fee', 0)
+
+        total_due = sum((service.price for service in services), Decimal('0')) + travel_fee
+        if payment_choice == PaymentChoice.FULL.value:
+            payment_amount = total_due
+        elif payment_choice == PaymentChoice.DEPOSIT.value:
+            payment_amount = (total_due * settings.BOOKING_DEPOSIT_PERCENT / Decimal('100')).quantize(Decimal('0.01'))
+        else:
+            payment_amount = Decimal('0')
 
         appointment = Appointment(
-            client=client, 
-            barber=barber, 
-            date=date, 
+            client=client,
+            barber=barber,
+            date=date,
             slot=slot,
             duration_minutes=validated_data['duration_minutes'],
             location_type=validated_data['location_type'],
             home_address=validated_data.get('home_address', ''),
             notes=validated_data.get('notes', ''),
-            travel_fee=validated_data.get('travel_fee', 0),
+            travel_fee=travel_fee,
+            payment_choice=payment_choice,
+            payment_amount=payment_amount,
+            payment_status=PaymentStatus.PENDING.value if payment_choice != PaymentChoice.NONE.value else PaymentStatus.UNPAID.value,
+            payment_deadline=(
+                timezone.now() + timedelta(minutes=settings.BOOKING_PAYMENT_WINDOW_MINUTES)
+                if payment_choice != PaymentChoice.NONE.value
+                else None
+            ),
         )
         appointment.save()
 
@@ -163,7 +202,10 @@ class CreateClientAppointmentSerializer(ClientValidationMixin, BarberValidationM
                 original_service=service
             )
 
-        transaction.on_commit(lambda: self._queue_confirmation(appointment.id))
+        # A deposit/full payment choice means the booking isn't final until the client
+        # actually pays — the webhook queues this same confirmation once that happens.
+        if payment_choice == PaymentChoice.NONE.value:
+            transaction.on_commit(lambda: self._queue_confirmation(appointment.id))
 
         return appointment
 
@@ -202,6 +244,65 @@ class RescheduleClientAppointmentSerializer(ClientValidationMixin, AppointmentVa
         appointment.save()
         transaction.on_commit(lambda: CreateClientAppointmentSerializer._queue_confirmation(appointment.id))
         return appointment
+
+
+class PayClientAppointmentSerializer(ClientValidationMixin, serializers.Serializer):
+    """
+    Client only: Starts (or restarts) a Paystack checkout for an appointment's deposit/full
+    payment. Deliberately not built on AppointmentValidationMixin.validate_find_appointment —
+    that method enforces the cancellation-notice window, which has nothing to do with paying.
+    """
+    def validate(self, attrs):
+        from ..utils import paystack
+
+        attrs = self.validate_client(attrs)
+        client = attrs['client']
+        appointment_id = self.context.get('appointment_id')
+
+        try:
+            appointment = Appointment.objects.get(pk=appointment_id, client=client)
+        except Appointment.DoesNotExist:
+            raise serializers.ValidationError('Appointment not found.')
+
+        if appointment.status != AppointmentStatus.ONGOING.value:
+            raise serializers.ValidationError('This appointment is no longer active.')
+
+        if appointment.payment_choice == PaymentChoice.NONE.value:
+            raise serializers.ValidationError('This appointment does not require payment.')
+
+        if appointment.payment_status == PaymentStatus.PAID.value:
+            raise serializers.ValidationError('This appointment is already paid.')
+
+        if not appointment.payment_deadline or timezone.now() > appointment.payment_deadline:
+            raise serializers.ValidationError('The payment window for this booking has expired. Please book again.')
+
+        if not paystack.is_configured():
+            raise serializers.ValidationError('Payments are not available right now.')
+
+        attrs['appointment'] = appointment
+        return attrs
+
+    def save(self, **kwargs):
+        import uuid
+
+        from ..utils import paystack
+
+        appointment = self.validated_data['appointment']
+        client = appointment.client
+
+        reference = f'apt{appointment.id}-{uuid.uuid4().hex[:10]}'
+        email = client.email or f'client{client.id}@barbermanager.local'
+        callback_url = f'{settings.FRONTEND_URL}/client/appointments?payment=callback'
+
+        try:
+            data = paystack.initialize_transaction(email, appointment.payment_amount, reference, callback_url)
+        except paystack.PaystackError as exc:
+            raise serializers.ValidationError(str(exc))
+
+        appointment.payment_reference = reference
+        appointment.save(update_fields=['payment_reference'])
+
+        return {'authorization_url': data['authorization_url'], 'reference': reference}
 
 
 class CancelClientAppointmentSerializer(ClientValidationMixin, AppointmentValidationMixin, serializers.Serializer):

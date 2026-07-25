@@ -50,6 +50,7 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_THROTTLE_RATES': {
         'otp_request': '10/hour',
+        'magic_link_request': '10/hour',
     },
 }
 
@@ -153,6 +154,14 @@ TWILIO_FROM_NUMBER = os.getenv('TWILIO_FROM_NUMBER', '')
 FIREBASE_AUTH_ENABLED = os.getenv('FIREBASE_AUTH_ENABLED', 'false').lower() == 'true'
 FIREBASE_PROJECT_ID = os.getenv('FIREBASE_PROJECT_ID', '')
 
+# Paystack (booking deposit / full-payment). Blank secret key = payments disabled — the
+# booking flow still works, clients just can't choose a paid option until this is set.
+PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY', '')
+PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY', '')
+PAYSTACK_CURRENCY = os.getenv('PAYSTACK_CURRENCY', 'GHS')
+BOOKING_DEPOSIT_PERCENT = int(os.getenv('BOOKING_DEPOSIT_PERCENT', '20'))
+BOOKING_PAYMENT_WINDOW_MINUTES = int(os.getenv('BOOKING_PAYMENT_WINDOW_MINUTES', '15'))
+
 # OTP login settings
 OTP_EXPIRY_MINUTES = 5
 OTP_MAX_PER_DAY = 5
@@ -176,6 +185,10 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send-appointment-reminders': {
         'task': 'api.tasks.send_appointment_reminders',
+        'schedule': crontab(minute='*/1'),
+    },
+    'release-unpaid-appointments': {
+        'task': 'api.tasks.release_unpaid_appointments',
         'schedule': crontab(minute='*/1'),
     },
 }

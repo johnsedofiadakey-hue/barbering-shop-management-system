@@ -10,6 +10,7 @@ psycopg2-binary==2.9.10
 PyJWT==2.9.0
 pyparsing==3.2.3
 redis==6.2.0
+requests==2.34.2
 sqlparse==0.5.3
 twilio==9.6.3
 tzdata==2025.2

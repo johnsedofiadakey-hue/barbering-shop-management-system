@@ -116,6 +116,7 @@ function Home() {
       bookDate: booking.date,
       bookSlot: booking.slot,
       bookLocation: booking.locationType,
+      bookPayment: booking.paymentChoice || 'NONE',
     });
     if (booking.locationType === 'HOME' && booking.homeAddress) {
       params.set('bookAddress', booking.homeAddress);

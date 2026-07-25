@@ -21,6 +21,12 @@ function Login({ initialStaffMode = false }) {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const completingClientLogin = useRef(false);
 
+  // Email is an optional, supplementary sign-in path for returning clients who added one —
+  // phone/OTP stays the only way to create an account.
+  const [loginMode, setLoginMode] = useState('phone'); // 'phone' | 'email'
+  const [magicLinkEmail, setMagicLinkEmail] = useState(null);
+  const [isSendingMagicLink, setIsSendingMagicLink] = useState(false);
+
   const nextPath = useMemo(() => {
     const requested = new URLSearchParams(location.search).get('next');
     return requested?.startsWith('/') && !requested.startsWith('//') ? requested : '/client/dashboard';
@@ -62,6 +68,16 @@ function Login({ initialStaffMode = false }) {
     await loginWithFirebaseEmail(email.trim(), password);
   };
 
+  const handleRequestMagicLink = async ({ email }) => {
+    setIsSendingMagicLink(true);
+    try {
+      await api.auth.requestMagicLink(email.trim());
+      setMagicLinkEmail(email.trim());
+    } finally {
+      setIsSendingMagicLink(false);
+    }
+  };
+
   return (
     <div className={styles.loginPage}>
       <div className={styles.loginVisual}>
@@ -86,27 +102,35 @@ function Login({ initialStaffMode = false }) {
             {staffMode ? 'Customer care & team portal' : isReturningLogin ? 'Your client account' : 'Secure mobile booking'}
           </span>
           <h1>
-            {otpPhone
-              ? 'Check your messages'
-              : staffMode
-                ? 'Staff access'
-                : isReturningLogin
-                  ? 'Welcome back'
-                  : 'Book from your phone'}
+            {staffMode
+              ? 'Staff access'
+              : loginMode === 'email'
+                ? magicLinkEmail
+                  ? 'Check your inbox'
+                  : 'Sign in with email'
+                : otpPhone
+                  ? 'Check your messages'
+                  : isReturningLogin
+                    ? 'Welcome back'
+                    : 'Book from your phone'}
           </h1>
           <p>
-            {otpPhone
-              ? `Enter the six-digit code sent to ${otpPhone}.`
-              : staffMode
-                ? 'Sign in with the email linked to your staff account.'
-                : isReturningLogin
-                  ? 'Use the same phone number as before to open your appointments and history.'
-                  : 'Simple, secure, and no client password to remember.'}
+            {staffMode
+              ? 'Sign in with the email linked to your staff account.'
+              : loginMode === 'email'
+                ? magicLinkEmail
+                  ? `If ${magicLinkEmail} is on an account, a sign-in link is on its way.`
+                  : 'We will email you a one-tap link — only works if you added this email in your account before.'
+                : otpPhone
+                  ? `Enter the six-digit code sent to ${otpPhone}.`
+                  : isReturningLogin
+                    ? 'Use the same phone number as before to open your appointments and history.'
+                    : 'Simple, secure, and no client password to remember.'}
           </p>
         </div>
 
         <div className={styles.loginCard}>
-          {!staffMode && !otpPhone && (
+          {!staffMode && loginMode === 'phone' && !otpPhone && (
             <Form initialFields={{ phone_number: '' }} onSubmit={handleRequestCode}>
               <div className={styles.formHeader}>
                 <span className={styles.iconChip}>
@@ -143,10 +167,82 @@ function Login({ initialStaffMode = false }) {
                 )}
               </Button>
               <Error />
+              <Button type="button" color="link" size="sm" onClick={() => setLoginMode('email')} wide>
+                Use email instead
+              </Button>
             </Form>
           )}
 
-          {!staffMode && otpPhone && (
+          {!staffMode && loginMode === 'email' && !magicLinkEmail && (
+            <Form initialFields={{ email: '' }} onSubmit={handleRequestMagicLink}>
+              <div className={styles.formHeader}>
+                <span className={styles.iconChip}>
+                  <Icon name="email_base" size="md" />
+                </span>
+                <div>
+                  <small>Email sign-in</small>
+                  <h2>Enter your email</h2>
+                </div>
+              </div>
+              <Input
+                label="Email address"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                required
+                disabled={isSendingMagicLink}
+                size="md"
+              />
+              <p className={styles.privacyNote}>
+                Only works if you added this email to your account already. New here? Use your phone instead.
+              </p>
+              <Button type="submit" color="gold" size="lg" disabled={isSendingMagicLink} wide>
+                {isSendingMagicLink ? (
+                  <span className={styles.line}>
+                    <Spinner size="sm" /> Sending link
+                  </span>
+                ) : (
+                  'Email me a sign-in link'
+                )}
+              </Button>
+              <Error />
+              <Button
+                type="button"
+                color="link"
+                size="sm"
+                onClick={() => {
+                  setLoginMode('phone');
+                  setOtpPhone(null);
+                }}
+                wide
+              >
+                Use my phone instead
+              </Button>
+            </Form>
+          )}
+
+          {!staffMode && loginMode === 'email' && magicLinkEmail && (
+            <div className={styles.magicLinkSent}>
+              <p>
+                Check <strong>{magicLinkEmail}</strong> for a one-tap sign-in link. It works once and expires soon.
+              </p>
+              <Button
+                type="button"
+                color="link"
+                size="sm"
+                onClick={() => {
+                  setLoginMode('phone');
+                  setMagicLinkEmail(null);
+                }}
+                wide
+              >
+                Use my phone instead
+              </Button>
+            </div>
+          )}
+
+          {!staffMode && loginMode === 'phone' && otpPhone && (
             <Form initialFields={{ code: '' }} onSubmit={handleVerifyCode}>
               <div className={styles.formHeader}>
                 <span className={styles.iconChip}>

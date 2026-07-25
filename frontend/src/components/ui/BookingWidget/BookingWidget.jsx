@@ -23,7 +23,14 @@ const getServiceImage = (service, index) => {
   return SERVICE_FALLBACK_IMAGES[index % SERVICE_FALLBACK_IMAGES.length];
 };
 
-const DEFAULT_SHOP = { currency_symbol: 'GH₵', home_visits_enabled: true, home_visit_fee: 0 };
+const DEFAULT_SHOP = {
+  currency_symbol: 'GH₵',
+  home_visits_enabled: true,
+  home_visit_fee: 0,
+  payments_enabled: false,
+  booking_deposit_percent: 20,
+  booking_payment_window_minutes: 15,
+};
 
 function BookingWidget({ onBookingComplete }) {
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
@@ -48,6 +55,7 @@ function BookingWidget({ onBookingComplete }) {
 
   const [locationType, setLocationType] = useState('SHOP');
   const [homeAddress, setHomeAddress] = useState('');
+  const [paymentChoice, setPaymentChoice] = useState('NONE');
 
   const [step, setStep] = useState('barber'); // 'barber' | 'service' | 'schedule'
 
@@ -157,6 +165,8 @@ function BookingWidget({ onBookingComplete }) {
 
   const selectedServices = services.filter((s) => selectedServiceIds.includes(String(s.id)));
   const totalPrice = selectedServices.reduce((sum, s) => sum + Number(s.price || 0), 0);
+  const totalDue = totalPrice + (locationType === 'HOME' ? Number(shop.home_visit_fee || 0) : 0);
+  const depositDue = (totalDue * shop.booking_deposit_percent) / 100;
 
   const addressReady = locationType !== 'HOME' || homeAddress.trim().length > 0;
   const scheduleReady = Boolean(selectedDate && selectedTime && addressReady);
@@ -171,6 +181,7 @@ function BookingWidget({ onBookingComplete }) {
       slot: selectedTime,
       locationType,
       homeAddress: locationType === 'HOME' ? homeAddress.trim() : '',
+      paymentChoice,
     });
   };
 
@@ -317,6 +328,43 @@ function BookingWidget({ onBookingComplete }) {
                   onChange={(e) => setHomeAddress(e.target.value)}
                 />
               </label>
+            )}
+
+            {shop.payments_enabled && (
+              <div className={styles.paymentToggle}>
+                <span className={styles.paymentLabel}>Secure this booking with</span>
+                <div className={styles.paymentOptions}>
+                  <button
+                    type="button"
+                    className={paymentChoice === 'NONE' ? styles.selected : ''}
+                    onClick={() => setPaymentChoice('NONE')}
+                  >
+                    <strong>No payment</strong>
+                    <small>Pay at the shop</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={paymentChoice === 'DEPOSIT' ? styles.selected : ''}
+                    onClick={() => setPaymentChoice('DEPOSIT')}
+                  >
+                    <strong>{shop.booking_deposit_percent}% deposit</strong>
+                    <small>{formatPrice(depositDue)} now</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={paymentChoice === 'FULL' ? styles.selected : ''}
+                    onClick={() => setPaymentChoice('FULL')}
+                  >
+                    <strong>Pay in full</strong>
+                    <small>{formatPrice(totalDue)} now</small>
+                  </button>
+                </div>
+                {paymentChoice !== 'NONE' && (
+                  <p className={styles.paymentNote}>
+                    Unpaid holds are released after {shop.booking_payment_window_minutes} minutes — paying locks your slot in.
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

@@ -214,6 +214,54 @@ class VerifyOTPSerializer(PhoneNumberValidationMixin, serializers.Serializer):
         return _client_session_representation(instance)
 
 
+class RequestMagicLinkSerializer(serializers.Serializer):
+    """
+    Client only: Emails a one-time sign-in link to a client's email on file.
+
+    Always responds the same way whether or not the email matches an account, so this
+    endpoint can't be used to enumerate which emails have accounts.
+    """
+    email = serializers.EmailField(required=True)
+
+    def validate(self, attrs):
+        attrs['client'] = Client.objects.filter(email__iexact=attrs['email'], is_active=True).first()
+        return attrs
+
+    def save(self, **kwargs):
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+        from django.contrib.auth.tokens import default_token_generator
+        from ..utils.emails import send_client_magic_link_email
+
+        client = self.validated_data.get('client')
+        if not client:
+            return None
+
+        uid = urlsafe_base64_encode(force_bytes(client.pk))
+        token = default_token_generator.make_token(client)
+        send_client_magic_link_email(client, uid, token, settings.FRONTEND_URL)
+        return client
+
+
+class VerifyMagicLinkSerializer(UIDTokenValidationSerializer, serializers.Serializer):
+    """
+    Client only: Exchanges a valid magic-link uid/token pair for a JWT session, same
+    shape as OTP verification so the frontend can treat both as one "session" result.
+    """
+    def validate(self, attrs):
+        attrs = self.validate_uid_token(attrs, target_key='user')
+        user = attrs['user']
+
+        if user.role != Roles.CLIENT.value:
+            raise serializers.ValidationError('Invalid link.')
+
+        client = Client.objects.get(pk=user.pk)
+        return _attach_client_session(attrs, client)
+
+    def to_representation(self, instance):
+        return _client_session_representation(instance)
+
+
 def _decode_firebase_token(id_token, error_message):
     """Shared Firebase ID-token verification used by every Firebase-backed login path."""
     if not getattr(settings, 'FIREBASE_AUTH_ENABLED', False):

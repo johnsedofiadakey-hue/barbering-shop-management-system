@@ -1,3 +1,4 @@
+from django.conf import settings as django_settings
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, parser_classes, permission_classes
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -13,7 +14,13 @@ from ..utils import IsAdminRole
 @permission_classes([AllowAny])
 @authentication_classes([])
 def get_shop_settings(request):
-    return Response({'shop': ShopSettingsSerializer(ShopSettings.load()).data})
+    data = ShopSettingsSerializer(ShopSettings.load()).data
+    # Not a model field — computed from whether Paystack secrets are set, so the frontend
+    # can hide paid-booking options entirely when there's no gateway to actually charge.
+    data['payments_enabled'] = bool(django_settings.PAYSTACK_SECRET_KEY)
+    data['booking_deposit_percent'] = django_settings.BOOKING_DEPOSIT_PERCENT
+    data['booking_payment_window_minutes'] = django_settings.BOOKING_PAYMENT_WINDOW_MINUTES
+    return Response({'shop': data})
 
 
 @api_view(['GET'])

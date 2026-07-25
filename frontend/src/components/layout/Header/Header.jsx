@@ -39,7 +39,7 @@ function Header() {
           <Logo size="lg" button />
 
           {!isAuthenticated && isHome && (
-            <nav className={styles.publicNav} aria-label="Public site">
+            <nav className={styles.publicNav} aria-label="Site sections">
               <a href="#services" onClick={handleNavClick('services')}>
                 Services
               </a>
@@ -73,20 +73,13 @@ function Header() {
               </>
             )}
 
-            {!isAuthenticated && (
+            {!isAuthenticated && isHome && (
               <>
-                {isHome && (
-                  <Button className={styles.clientLogin} href="/login?next=%2Fclient%2Fdashboard" size="sm" color="link">
-                    Sign in
-                  </Button>
-                )}
-                <Button
-                  href={isHome ? undefined : '/'}
-                  onClick={isHome ? handleScrollToBooking : undefined}
-                  size="md"
-                  color="gold"
-                >
-                  {isHome ? 'Book now' : 'Public site'}
+                <Button className={styles.clientLogin} href="/login?next=%2Fclient%2Fdashboard" size="sm" color="link">
+                  Sign in
+                </Button>
+                <Button onClick={handleScrollToBooking} size="md" color="gold">
+                  Book now
                 </Button>
               </>
             )}

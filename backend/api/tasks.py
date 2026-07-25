@@ -4,8 +4,11 @@ from datetime import datetime, timedelta
 from celery import shared_task
 from django.utils import timezone
 
-from .models import Appointment, AppointmentStatus, ShopSettings
+from django.conf import settings
+
+from .models import Appointment, AppointmentStatus, PaymentStatus, ShopSettings
 from .utils import send_barber_reminder_email
+from .utils.emails import send_client_booking_confirmation_email
 from .utils.sms import send_booking_confirmation_sms, send_client_reminder_sms
 
 
@@ -36,6 +39,22 @@ def complete_ongoing_appointments():
 
 
 @shared_task
+def release_unpaid_appointments():
+    """
+    Cancels ONGOING appointments whose payment hold (deposit/full choice) expired without
+    being paid, freeing the slot for someone else. Appointments booked with no payment
+    required are never touched here.
+    """
+    now = timezone.now()
+    expired = Appointment.objects.filter(
+        status=AppointmentStatus.ONGOING.value,
+        payment_status=PaymentStatus.PENDING.value,
+        payment_deadline__lt=now,
+    )
+    return expired.update(status=AppointmentStatus.CANCELLED.value)
+
+
+@shared_task
 def send_booking_confirmation(appointment_id):
     """Send a booking or rescheduling confirmation without risking the booking transaction."""
 
@@ -55,6 +74,23 @@ def send_booking_confirmation(appointment_id):
         appointment.confirmation_sent_at = timezone.now()
         appointment.notification_error = ''
         appointment.save(update_fields=['confirmation_sent_at', 'notification_error'])
+
+        # Email confirmation is a bonus for clients who added one — never lets a missing
+        # or failing email block the SMS confirmation above, which is the source of truth.
+        if appointment.client.email:
+            try:
+                from django.utils.http import urlsafe_base64_encode
+                from django.utils.encoding import force_bytes
+                from django.contrib.auth.tokens import default_token_generator
+
+                uid = urlsafe_base64_encode(force_bytes(appointment.client.pk))
+                token = default_token_generator.make_token(appointment.client)
+                send_client_booking_confirmation_email(
+                    appointment.client, appointment.barber, appointment, uid, token, settings.FRONTEND_URL
+                )
+            except Exception:
+                logger.exception('Booking confirmation email failed for appointment %s', appointment_id)
+
         return True
     except Exception as exc:  # Notification failure must never remove a valid booking.
         logger.exception('Booking confirmation failed for appointment %s', appointment_id)

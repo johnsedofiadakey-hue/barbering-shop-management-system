@@ -12,6 +12,7 @@ from api.serializers.client import (
     DeleteClientProfileSerializer,
     GetClientAppointmentsSerializer,
     CreateClientAppointmentSerializer,
+    PayClientAppointmentSerializer,
     CancelClientAppointmentSerializer,
     RescheduleClientAppointmentSerializer,
     GetClientReviewsSerializer,
@@ -101,9 +102,34 @@ def create_client_appointment(request, barber_id):
     """
     serializer = CreateClientAppointmentSerializer(data=request.data, context={'client': request.user, 'barber_id': barber_id})
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    appointment = serializer.save()
 
-    return Response({'detail': 'Appointment added successfully.'}, status=status.HTTP_201_CREATED)
+    return Response(
+        {'detail': 'Appointment added successfully.', 'appointment_id': appointment.id},
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: OpenApiResponse(description="Paystack checkout started; redirect the client to `authorization_url`."),
+        400: OpenApiResponse(description="Appointment doesn't need payment, is already paid, or its payment window expired."),
+    },
+    description="Client only: Starts (or restarts) a Paystack checkout for an appointment's deposit/full payment.",
+)
+@api_view(['POST'])
+@permission_classes([IsClientRole])
+@parser_classes([JSONParser])
+def pay_client_appointment(request, appointment_id):
+    """
+    Client only: Starts (or restarts) a Paystack checkout for an appointment's deposit/full payment.
+    """
+    serializer = PayClientAppointmentSerializer(data={}, context={'client': request.user, 'appointment_id': appointment_id})
+    serializer.is_valid(raise_exception=True)
+    result = serializer.save()
+
+    return Response(result, status=status.HTTP_200_OK)
 
 
 @extend_schema(

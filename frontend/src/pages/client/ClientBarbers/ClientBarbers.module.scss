@@ -193,7 +193,8 @@
       padding: 0;
       border-radius: 50%;
 
-      span {
+      // Target only the trailing text label, not the icon's own wrapper span
+      > span:last-child {
         display: none;
       }
     }
